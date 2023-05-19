@@ -2,9 +2,6 @@ import { Bot } from "grammy";
 import dotenv from 'dotenv';
 dotenv.config();
 
-console.log(process.env.TELEGRAM_BOT_TOKEN);
-console.log(process.env.TELEGRAM_BOT_TOKEN?.length);
-
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (token === undefined) {
     throw new Error('TELEGRAM_BOT_TOKEN environment variable is UNDEFINED and it must be provided!');
