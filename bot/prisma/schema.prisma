@@ -8,7 +8,38 @@ datasource db {
 }
 
 model User {
-  id    BigInt     @id @db.BigInt
-  name  String? @db.VarChar(255)
-  email String?  @unique @db.VarChar(255)
+  cbdata        String?         @db.VarChar(255)
+  firstname     String?         @db.VarChar(255)
+  language      String?         @db.VarChar(255)
+  lastname      String?         @db.VarChar(255)
+  userid        BigInt          @id
+  username      String?         @db.VarChar(255)
+  user_in_group user_in_group[]
+}
+
+model Group {
+  chatid        BigInt          @id
+  name          String          @db.VarChar(255)
+  type          String          @db.VarChar(255)
+  is_silent     Boolean
+  user_in_group user_in_group[]
+}
+
+model user_in_group {
+  id               Int      @id @default(autoincrement())
+  userid           BigInt
+  chatid           BigInt
+  role             String   @db.VarChar(255)
+  is_admin         Boolean
+  beast_mode       Boolean  @default(false)
+  down_available   Int      @default(2)
+  first_seen       DateTime @default(now())
+  last_seen        DateTime @default(now())
+  messages         Int      @default(0)
+  messages_today   Int      @default(0)
+  reputation       Int      @default(0)
+  reputation_today Int      @default(0)
+  up_available     Int      @default(10)
+  group            Group    @relation(fields: [chatid], references: [chatid])
+  user             User     @relation(fields: [userid], references: [userid])
 }
