@@ -29,17 +29,16 @@ model user_in_group {
   id               Int      @id @default(autoincrement())
   userid           BigInt
   chatid           BigInt
-  role             String   @db.VarChar(255)
-  is_admin         Boolean
-  beast_mode       Boolean  @default(false)
-  down_available   Int      @default(2)
+  is_admin         Boolean  @default(false)
   first_seen       DateTime @default(now())
   last_seen        DateTime @default(now())
-  messages         Int      @default(0)
-  messages_today   Int      @default(0)
   reputation       Int      @default(0)
   reputation_today Int      @default(0)
+  messages         Int      @default(0)
+  messages_today   Int      @default(0)
   up_available     Int      @default(10)
+  down_available   Int      @default(2)
+  beast_mode       Boolean  @default(false)
   group            Group    @relation(fields: [chatid], references: [chatid])
   user             User     @relation(fields: [userid], references: [userid])
 }

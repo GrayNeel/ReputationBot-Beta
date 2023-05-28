@@ -11,6 +11,7 @@ with open(input_file, "r") as file:
     group_lines = []
     processing_users = False
     user_lines = []
+    user_in_group_lines = []
 
     # Read the file line by line
     for line in file:
@@ -65,10 +66,20 @@ with open(input_file, "r") as file:
 
                 # Extract the values
                 userid = values[0].strip()
+                chatid = values[1].strip()
                 firstname = values[2].strip().strip("'")
                 lastname = values[3].strip().strip("'")
                 username = values[4].strip().strip("'")
                 language = values[5].strip().strip("'")
+                first_seen = values[6].strip().strip("'")
+                last_seen = values[7].strip().strip("'")
+                reputation = values[8].strip()
+                reputation_today = values[9].strip()
+                messages = values[10].strip()
+                messages_today = values[11].strip()
+                up_available = values[12].strip()
+                down_available = values[13].strip()
+                beast_mode = values[14].strip()
                 cbdata = values[15].strip().strip("'")
 
                 # Create the INSERT INTO statement for the 'User' table
@@ -76,6 +87,12 @@ with open(input_file, "r") as file:
 
                 # Add the statement to the user_lines list
                 user_lines.append(insert_statement)
+
+                # Create the INSERT INTO statement for the 'user_in_group' table
+                insert_statement = f"INSERT INTO \"user_in_group\" (\"id\", \"userid\", \"chatid\", \"is_admin\", \"first_seen\", \"last_seen\", \"reputation\", \"reputation_today\", \"messages\", \"messages_today\", \"up_available\", \"down_available\", \"beast_mode\") VALUES (NULL, {userid}, {chatid}, false, '{first_seen}', '{last_seen}', {reputation}, {reputation_today}, {messages}, {messages_today}, {up_available}, {down_available}, {beast_mode});"
+
+                # Add the statement to the user_in_group_lines list
+                user_in_group_lines.append(insert_statement)
 
             # Break the loop if we have processed the 'users' section
             #if line.endswith(");"):
@@ -85,3 +102,4 @@ with open(input_file, "r") as file:
 with open(output_file, "w") as output:
     output.writelines("\n".join(group_lines))
     output.writelines("\n".join(user_lines))
+    output.writelines("\n".join(user_in_group_lines))
