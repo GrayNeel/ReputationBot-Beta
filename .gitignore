@@ -3,3 +3,4 @@
 **/.env
 **/target
 **/.vscode
+**/*.sql
