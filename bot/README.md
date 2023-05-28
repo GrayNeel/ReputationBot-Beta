@@ -17,3 +17,6 @@ run `npx prisma db pull` to generate the data structures from the db schema
 
 ## environment variables
 when modifying the contend of the .env file by adding new variables, we also need to add those variables to the environment.d.ts file to specify the type of the variable
+
+## database migration
+put in the same folder the dump of the old db called `dump.sql` and the extract_groups.py script and run from the terminal the command `python3 extract_groups.py`
