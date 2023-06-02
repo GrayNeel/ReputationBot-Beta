@@ -20,3 +20,5 @@ when modifying the contend of the .env file by adding new variables, we also nee
 
 ## database migration
 put in the same folder the dump of the old db called `dump.sql` and the extract_groups.py script and run from the terminal the command `python3 extract_groups.py`
+for some reason somemtimes in the dump values that should be represented by the empty string are instead represented by NULL, for the script to work properly is necessary to replace the NULL values with the empty string in the dump file, this can be done by searching for the regex `, NULL` and replacing it with `, ''` in the dump file. 
+to do so with vscode use the regex search and replace option before running the script.
