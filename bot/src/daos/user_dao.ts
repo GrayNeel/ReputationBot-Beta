@@ -92,6 +92,8 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: number, amo
 
     //if the user doesn't have enough up_available, throw an error
     if (user_in_group.up_available + amount < 0) {
+        //TODO: add a message to the user to tell him that he doesn't have enough up_available
+        // maybe at the upper level of the code, in the module that calls this function
         throw new Error("INSUFFICIENT_UP_AVAILABLE");
     }
 
