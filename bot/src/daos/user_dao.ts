@@ -86,7 +86,8 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: number, amo
 
         if (user_in_group === null) throw new Error("user_in_group is null after create!");
 
-        console.log("user_in_group created: " + user_in_group);
+        console.log("user_in_group created: ");
+        console.log(user_in_group);
     }
 
     //if the user doesn't have enough up_available, throw an error
@@ -97,8 +98,7 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: number, amo
     await prisma.user_in_group.update({
         where: { id: user_in_group.id },
         data: {
-            reputation: user_in_group.reputation + amount,
-            reputation_today: user_in_group.reputation_today + amount
+            up_available: user_in_group.up_available + amount,
         }
     });
 
