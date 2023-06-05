@@ -1,6 +1,11 @@
 import { Bot } from "grammy";
 import dotenv from 'dotenv';
-import { saveUser } from "./user_dao";
+import { upsertUser, upsertUserReputation, upsertUserUpAvailable } from "./daos/user_dao";
+import { User } from "@prisma/client";
+import * as group_api from "./modules/group";
+import * as user_api from "./modules/user";
+import { channel } from "diagnostics_channel";
+import { removeGroup, upsertGroup } from "./daos/group_dao";
 dotenv.config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -14,13 +19,85 @@ const bot = new Bot(token); // <-- place your bot token in this string
 // Register listeners to handle messages
 bot.on("message:text", (ctx) => {
 
-    ctx.reply("Echo: " + ctx.message.text);
-    const userId = ctx.from.id;
-    saveUser(userId, ctx.from.username)
+    //parse the user from the context
+    const sender: User = user_api.parseSender(ctx);
+    upsertUser(sender);
+
+    // handle messages starting with "+" (plus) that are replies to other messages
+    if (ctx.message.text.startsWith("+") && ctx.message.reply_to_message !== undefined && ctx.message.reply_to_message.from !== undefined) {
+
+        const increase_rep_value = 1;
+        const decrease_up_value = -1;
+
+        //getting the receiver informations
+        const rcvr_from = ctx.message.reply_to_message.from;
+        const receiver_id = BigInt(rcvr_from.id);
+        const receiver_firstname = rcvr_from.first_name;
+        const receiver_username = rcvr_from.username;
+
+        // upsert receiver reputation
+        upsertUserReputation(receiver_id, ctx.chat.id, increase_rep_value, false);
+        // upsert sender up available
+        upsertUserUpAvailable(sender.userid, ctx.chat.id, decrease_up_value, false);
+
+        let success_msg = ""+ receiver_firstname;
+        if (receiver_username !== undefined) 
+            success_msg += " ( @" + receiver_username + " )";
+        
+        success_msg += " has received "+ increase_rep_value +" reputation point from " + sender.firstname;
+
+        if (sender.username !== undefined) 
+            success_msg += " ( @" + sender.username + " )";
+
+        ctx.reply(success_msg + "!");   
+
+    }
 
 });
 
+/// detect when happens something to the "chat member" status of this bot, it triggers
+/// - in groups when the bot is added or removed
+/// - in private chats when the bot is started or stopped
+bot.on("my_chat_member", async (ctx) => {
 
+
+    if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
+    if (ctx.chat === undefined) throw new Error('ctx.chat is UNDEFINED!');
+
+    const type = ctx.chat.type;
+
+    if (type == "private") {
+        console.log("chat type: private");
+        return;
+    }
+
+    if (type == "channel") {
+        console.log("chat type: channel");
+        return;
+    }
+
+    if (type != "group" && type != "supergroup") throw new Error('type is neither channel, private, group or supergroup! it is \"' + type + '\" instead!');
+
+    //type can only be group or supergroup at this point
+    const group = group_api.parseGroup(ctx);
+    const status = ctx.myChatMember.new_chat_member.status;
+
+    if( status == "member" ){
+        //it means the bot has been added to this group
+        upsertGroup(group);
+    }
+    /**
+     * TODO: decide if we want to implement data removal when the bot is removed from a group
+     */
+    //else if( status == "left" || status == "kicked" ){
+    //    //it means the bot has been removed from this group
+    //    //so i remove all the entries in user_in_group having this group as a foreign key
+    //    // TODO
+    //    //and then i remove the group
+    //    removeGroup(group);
+    //}
+
+});
 
 // Start the bot (using long polling)
 bot.start();
