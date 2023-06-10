@@ -1,11 +1,9 @@
 import { Bot } from "grammy";
 import dotenv from 'dotenv';
-import { upsertUser, upsertUserReputation, upsertUserUpAvailable } from "./daos/user_dao";
-import { User } from "@prisma/client";
+import * as user_dao from "./daos/user_dao";
 import * as group_api from "./modules/group";
 import * as user_api from "./modules/user";
-import { channel } from "diagnostics_channel";
-import { removeGroup, upsertGroup } from "./daos/group_dao";
+import { upsertGroup } from "./daos/group_dao";
 dotenv.config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -20,38 +18,60 @@ const bot = new Bot(token); // <-- place your bot token in this string
 bot.on("message:text", (ctx) => {
 
     //parse the user from the context
-    const sender: User = user_api.parseSender(ctx);
-    upsertUser(sender);
+    const sender = user_api.parseSender(ctx);
+    user_dao.upsertUser(sender);
+
+    //if te message is not a reply, return
+    if (ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined){
+        console.log("ignore because: msg is not a reply");
+        return;
+    }
+    
+    //parse receiver from the context
+    const receiver = user_api.parseReceiver(ctx);
+    user_dao.upsertUser(receiver);
+
+    //parse group from the context
+    const group = group_api.parseGroup(ctx);
 
     // handle messages starting with "+" (plus) that are replies to other messages
-    if (ctx.message.text.startsWith("+") && ctx.message.reply_to_message !== undefined && ctx.message.reply_to_message.from !== undefined) {
+    if (ctx.message.text.startsWith("+")) {
 
         const increase_rep_value = 1;
         const decrease_up_value = -1;
 
-        //getting the receiver informations
-        const rcvr_from = ctx.message.reply_to_message.from;
-        const receiver_id = BigInt(rcvr_from.id);
-        const receiver_firstname = rcvr_from.first_name;
-        const receiver_username = rcvr_from.username;
 
         // upsert receiver reputation
-        upsertUserReputation(receiver_id, ctx.chat.id, increase_rep_value, false);
+        user_dao.upsertUserReputation(receiver.userid, group.chatid, increase_rep_value, false);
         // upsert sender up available
-        upsertUserUpAvailable(sender.userid, ctx.chat.id, decrease_up_value, false);
+        user_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_up_value, false);
 
-        let success_msg = ""+ receiver_firstname;
-        if (receiver_username !== undefined) 
-            success_msg += " ( @" + receiver_username + " )";
-        
+        let success_msg = ""+ receiver.firstname;
+        if (receiver.username !== undefined) success_msg += " ( @" + receiver.username + " )"; 
         success_msg += " has received "+ increase_rep_value +" reputation point from " + sender.firstname;
-
-        if (sender.username !== undefined) 
-            success_msg += " ( @" + sender.username + " )";
+        if (sender.username !== undefined) success_msg += " ( @" + sender.username + " )";
 
         ctx.reply(success_msg + "!");   
 
+    } else if (ctx.message.text.startsWith("-")) {
+
+        const decrease_rep_value = -1;
+        const decrease_up_value = -1;
+
+        // upsert receiver reputation
+        user_dao.upsertUserReputation(receiver.userid, group.chatid, decrease_rep_value, false);
+        // upsert sender down available
+        user_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_up_value, false);
+
+        let success_msg = ""+ receiver.firstname;
+        if (receiver.username !== undefined) success_msg += " ( @" + receiver.username + " )";
+        success_msg += " has lost "+ decrease_rep_value +" reputation point because of " + sender.firstname;
+        if (sender.username !== undefined) success_msg += " ( @" + sender.username + " )";
+
+        ctx.reply(success_msg + "!");
     }
+
+
 
 });
 
