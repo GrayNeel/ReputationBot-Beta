@@ -19,14 +19,14 @@ model User {
 
 model Group {
   chatid        BigInt          @id
-  title          String          @db.VarChar(255)
+  title         String          @db.VarChar(255)
   type          String          @db.VarChar(255)
   is_silent     Boolean
   user_in_group user_in_group[]
 }
 
 model user_in_group {
-  id               Int      @id @default(autoincrement())
+  //id               Int      @id @default(autoincrement())
   userid           BigInt
   chatid           BigInt
   is_admin         Boolean  @default(false)
@@ -41,4 +41,6 @@ model user_in_group {
   beast_mode       Boolean  @default(false)
   group            Group    @relation(fields: [chatid], references: [chatid])
   user             User     @relation(fields: [userid], references: [userid])
+
+  @@id([userid, chatid])
 }
