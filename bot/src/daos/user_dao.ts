@@ -1,5 +1,4 @@
 import { PrismaClient, User } from '@prisma/client'
-import { inflate } from 'zlib';
 const prisma = new PrismaClient();
 
 //save a user to the database if it doesn't exist or update all fields except for cbdata
@@ -26,81 +25,92 @@ export async function upsertUser(user: User) {
  * @param userid the id of the user
  * @param groupid the id of the group where we have to update the user reputation
  * @param amount the amount of reputation to add or subtract
- * @param is_admin if the user is an admin or not of that group (needed in case the user is not alread associated with the group)
+ * @param is_admin if the user is an admin or not of that group (needed in case the user is not already associated with the group)
  */
-export async function upsertUserReputation(userid: bigint, groupid: number, amount: number, is_admin: boolean) {
+export async function upsertUserReputation(userid: bigint, groupid: bigint, amount: number, is_admin: boolean) {
 
     //get the user_in_group entry for the user in the group
-    const user_in_group = await prisma.user_in_group.findFirst({
-        where: { userid: userid, chatid: groupid }
+    const uig = await upsertUserInGroup(userid, groupid, is_admin);
+
+    await prisma.user_in_group.update({
+        where: {
+            userid_chatid: {
+                userid: userid,
+                chatid: groupid
+            }
+        },
+        data: {
+            reputation: uig.reputation + amount,
+            reputation_today: uig.reputation_today + amount
+        }
     });
 
-    //if the user is not in the group, add it
-    if (user_in_group === null) {
-        await prisma.user_in_group.create({
-            data: {
-                userid: userid,
-                chatid: groupid,
-                reputation: amount,
-                reputation_today: amount,
-                is_admin: is_admin
-            }
-        });
-    }
-    else {
-        await prisma.user_in_group.update({
-            where: { id: user_in_group.id },
-            data: {
-                reputation: user_in_group.reputation + amount,
-                reputation_today: user_in_group.reputation_today + amount
-            }
-        });
-    }
 }
 
 
 /**
- * Function to update the reputation of a user in a group, 
+ * Function to update the remaining ups of a user in a group, 
  * it also adds a new entry in the user_in_group table if the user is not already associated with the group
  * @param userid the id of the user
- * @param groupid the id of the group where we have to update the user reputation
+ * @param groupid the id of the group where we have to update the user "up" availability
  * @param amount the amount of up availables to add or subtract (usually set to -1)
- * @param is_admin if the user is an admin or not of that group (needed in case the user is not alread associated with the group)
+ * @param is_admin if the user is an admin or not of that group (needed in case the user is not already associated with the group)
  */
-export async function upsertUserUpAvailable(userid: bigint, groupid: number, amount: number, is_admin: boolean) {
+export async function upsertUserUpAvailable(userid: bigint, groupid: bigint, amount: number, is_admin: boolean) {
 
     //get the user_in_group entry for the user in the group
-    let user_in_group = await prisma.user_in_group.findFirst({
-        where: { userid: userid, chatid: groupid }
-    });
-
-    //if the user is not in the group, add it
-    if (user_in_group === null) {
-        user_in_group = await prisma.user_in_group.create({
-            data: {
-                userid: userid,
-                chatid: groupid,
-                is_admin: is_admin
-            }
-        });
-
-        if (user_in_group === null) throw new Error("user_in_group is null after create!");
-
-        console.log("user_in_group created: ");
-        console.log(user_in_group);
-    }
+    let uig = await upsertUserInGroup(userid, groupid, is_admin);
 
     //if the user doesn't have enough up_available, throw an error
-    if (user_in_group.up_available + amount < 0) {
+    if (uig.up_available + amount < 0) {
         //TODO: add a message to the user to tell him that he doesn't have enough up_available
         // maybe at the upper level of the code, in the module that calls this function
         throw new Error("INSUFFICIENT_UP_AVAILABLE");
     }
 
     await prisma.user_in_group.update({
-        where: { id: user_in_group.id },
+        where: {
+            userid_chatid: {
+                userid: userid,
+                chatid: groupid
+            }
+        },
         data: {
-            up_available: user_in_group.up_available + amount,
+            up_available: uig.up_available + amount,
+        }
+    });
+
+}
+
+/**
+ * Function to update the remaining downs of a user in a group, 
+ * it also adds a new entry in the user_in_group table if the user is not already associated with the group
+ * @param userid the id of the user
+ * @param groupid the id of the group where we have to update the user "down" availability
+ * @param amount the amount of down availables to add or subtract (usually set to -1)
+ * @param is_admin if the user is an admin or not of that group (needed in case the user is not alread associated with the group)
+ */
+export async function upsertUserDownAvailable(userid: bigint, groupid: bigint, amount: number, is_admin: boolean) {
+
+    //get the user_in_group entry for the user in the group
+    let uig = await upsertUserInGroup(userid, groupid, is_admin);
+
+    //if the user doesn't have enough down_available, throw an error
+    if (uig.down_available + amount < 0) {
+        //TODO: add a message to the user to tell him that he doesn't have enough down_available
+        // maybe at the upper level of the code, in the module that calls this function
+        throw new Error("INSUFFICIENT_DOWN_AVAILABLE");
+    }
+
+    await prisma.user_in_group.update({
+        where: {
+            userid_chatid: {
+                userid: userid,
+                chatid: groupid
+            }
+        },
+        data: {
+            down_available: uig.down_available + amount,
         }
     });
 
@@ -112,17 +122,15 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: number, amo
  * @param userid 
  * @param groupid
  */
-export async function getUserReputation(userid: bigint, groupid: number) {
+export async function getUserReputation(userid: bigint, groupid: bigint) {
 
-    const user_in_group = await prisma.user_in_group.findFirst({
-        where: { userid: userid, chatid: groupid }
-    });
+    let uig = await upsertUserInGroup(userid, groupid, undefined);
 
-    if (user_in_group === null) {
+    if (uig === null) {
         return 0;
     }
 
-    return user_in_group.reputation;
+    return uig.reputation;
 }
 
 /**
@@ -143,4 +151,26 @@ export async function getUserUpAvailable(userid: bigint, groupid: number) {
     }
 
     return user_in_group.up_available;
+}
+
+//save a user_in_group to the database if it doeasn't exist
+export async function upsertUserInGroup(userid: bigint, groupid: bigint, is_admin: boolean | undefined) {
+
+    //get the user_in_group entry for the user in the group
+    let uig = await prisma.user_in_group.upsert({
+        where: {
+            userid_chatid: {
+                userid: userid,
+                chatid: groupid
+            }
+        },
+        update: { is_admin: is_admin },
+        create: {
+            userid: userid,
+            chatid: groupid,
+            is_admin: is_admin
+        }
+    });
+
+    return uig;
 }
