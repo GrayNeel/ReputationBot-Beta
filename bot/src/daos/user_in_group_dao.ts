@@ -172,3 +172,13 @@ export async function upsertUserInGroup(userid: bigint, groupid: bigint, is_admi
 
     return uig;
 }
+
+// get all groups id of a user
+export async function getByUserId(userid: bigint) {
+
+    const user_in_groups = await prisma.user_in_group.findMany({
+        where: { userid: userid }
+    });
+
+    return user_in_groups;
+}

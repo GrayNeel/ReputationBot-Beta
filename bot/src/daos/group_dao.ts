@@ -33,3 +33,12 @@ export async function removeGroup(group:Group) {
       }).catch(()=>{ throw new Error("removeGroup has failed in removing group: "+group); })
     
 }
+
+export async function getGroup(chatid: bigint) {
+    
+        const group = await prisma.group.findUnique({
+            where: { chatid: chatid }
+        });
+    
+        return group;
+}
