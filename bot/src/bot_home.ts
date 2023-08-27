@@ -1,5 +1,4 @@
 import { Bot } from "grammy";
-import { Menu } from "@grammyjs/menu";
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import * as user_dao from "./daos/user_dao";
@@ -7,6 +6,7 @@ import * as group_api from "./modules/group";
 import * as uig_dao from "./daos/user_in_group_dao";
 import * as user_api from "./modules/user";
 import { upsertGroup } from "./daos/group_dao";
+import * as menu_api from "./modules/private_menu";
 dotenv.config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -17,16 +17,11 @@ if (token === undefined) {
 // Create a bot object
 const bot = new Bot(token); // <-- place your bot token in this string
 
-const menu = new Menu("my-menu-identifier")
-  .text("A", (ctx) => ctx.reply("You pressed A!")).row()
-  .text("B", (ctx) => ctx.reply("You pressed B!"));
+bot.use(menu_api.start_menu);
 
-
-bot.use(menu);
-
-bot.command("start", async (ctx) => {
+bot.chatType("private").command("start", async (ctx) => {
     // Send the menu.
-    await ctx.reply("Check out this menu:", { reply_markup: menu });
+    menu_api.print_menu(ctx);
   });
 
 // Register listeners to handle messages
@@ -57,9 +52,9 @@ bot.on("message:text", (ctx) => {
 
 
         // upsert receiver reputation
-        user_dao.upsertUserReputation(receiver.userid, group.chatid, increase_rep_value, false);
+        uig_dao.upsertUserReputation(receiver.userid, group.chatid, increase_rep_value, false);
         // upsert sender up available
-        user_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_up_value, false);
+        uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_up_value, false);
 
         let success_msg = ""+ receiver.firstname;
         if (receiver.username !== undefined) success_msg += " ( @" + receiver.username + " )"; 
@@ -74,9 +69,9 @@ bot.on("message:text", (ctx) => {
         const decrease_up_value = -1;
 
         // upsert receiver reputation
-        user_dao.upsertUserReputation(receiver.userid, group.chatid, decrease_rep_value, false);
+        uig_dao.upsertUserReputation(receiver.userid, group.chatid, decrease_rep_value, false);
         // upsert sender down available
-        user_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_up_value, false);
+        uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_up_value, false);
 
         let success_msg = ""+ receiver.firstname;
         if (receiver.username !== undefined) success_msg += " ( @" + receiver.username + " )";
