@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, Context} from "grammy";
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import * as user_dao from "./daos/user_dao";
@@ -7,6 +7,7 @@ import * as uig_dao from "./daos/user_in_group_dao";
 import * as user_api from "./modules/user";
 import { upsertGroup } from "./daos/group_dao";
 import * as menu_api from "./modules/private_menu";
+import { User } from "@prisma/client";
 dotenv.config();
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -50,18 +51,11 @@ bot.on("message:text", (ctx) => {
         const increase_rep_value = 1;
         const decrease_up_value = -1;
 
-
         // upsert receiver reputation
-        uig_dao.upsertUserReputation(receiver.userid, group.chatid, increase_rep_value, false);
+        let new_rep = uig_dao.upsertUserReputation(receiver.userid, group.chatid, increase_rep_value, false);
         // upsert sender up available
-        uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_up_value, false);
-
-        let success_msg = ""+ receiver.firstname;
-        if (receiver.username !== undefined) success_msg += " ( @" + receiver.username + " )"; 
-        success_msg += " has received "+ increase_rep_value +" reputation point from " + sender.firstname;
-        if (sender.username !== undefined) success_msg += " ( @" + sender.username + " )";
-
-        ctx.reply(success_msg + "!");   
+        let new_available = uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_up_value, false);
+        print_rep_update(ctx, new_rep, new_available, receiver, sender);
 
     } else if (ctx.message.text.startsWith("-")) {
 
@@ -69,21 +63,36 @@ bot.on("message:text", (ctx) => {
         const decrease_up_value = -1;
 
         // upsert receiver reputation
-        uig_dao.upsertUserReputation(receiver.userid, group.chatid, decrease_rep_value, false);
+        let new_rep = uig_dao.upsertUserReputation(receiver.userid, group.chatid, decrease_rep_value, false);
         // upsert sender down available
-        uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_up_value, false);
-
-        let success_msg = ""+ receiver.firstname;
-        if (receiver.username !== undefined) success_msg += " ( @" + receiver.username + " )";
-        success_msg += " has lost "+ decrease_rep_value +" reputation point because of " + sender.firstname;
-        if (sender.username !== undefined) success_msg += " ( @" + sender.username + " )";
-
-        ctx.reply(success_msg + "!");
+        let new_available = uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_up_value, false);
+        print_rep_update(ctx, new_rep, new_available, receiver, sender);
     }
-
-
-
 });
+
+async function print_rep_update(ctx: Context, new_rep: Promise<number>, new_available: Promise<number>, receiver: User, sender: User, is_up: boolean = true){
+    new_available.then((new_available) => {
+        new_rep.then((new_rep) => {
+            let success_msg = "";
+            success_msg += receiver.username !== undefined ? "@" + receiver.username : receiver.firstname;
+            success_msg += " reputation";
+            success_msg += is_up ? " incremented!" : "decremented!";
+            success_msg += "("+ new_rep +")\n";
+            success_msg += sender.username !== undefined ? "@" + sender.username : sender.firstname + " has " + new_available;
+            success_msg += is_up ? " up left!" : " down left!";
+            ctx.reply(success_msg);
+        }
+        ).catch((e) => {
+            console.log(e);
+            ctx.reply("Error while updating receiver reputation");
+        });
+    }
+    ).catch((e) => {
+        console.log(e);
+        ctx.reply("Error while updating sender up available" + e);
+    });
+}
+
 
 /// detect when happens something to the "chat member" status of this bot, it triggers
 /// - in groups when the bot is added or removed
@@ -135,6 +144,7 @@ cron.schedule('0 0 0 * * *', () => {
     console.log('running a task every day at midnight');
     uig_dao.resetAllUpAndDownAvailable();
 });
+
 
 // Start the bot (using long polling)
 bot.start();

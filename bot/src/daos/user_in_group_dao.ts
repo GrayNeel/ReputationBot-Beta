@@ -48,9 +48,9 @@ export async function getUserUpAvailable(userid: bigint, groupid: number) {
 export async function upsertUserReputation(userid: bigint, groupid: bigint, amount: number, is_admin: boolean) {
 
     //get the user_in_group entry for the user in the group
-    const uig = await upsertUserInGroup(userid, groupid, is_admin);
+    let uig = await upsertUserInGroup(userid, groupid, is_admin);
 
-    await prisma.user_in_group.update({
+    uig = await prisma.user_in_group.update({
         where: {
             userid_chatid: {
                 userid: userid,
@@ -62,6 +62,8 @@ export async function upsertUserReputation(userid: bigint, groupid: bigint, amou
             reputation_today: uig.reputation_today + amount
         }
     });
+
+    return uig.reputation;
 
 }
 
@@ -86,7 +88,7 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: bigint, amo
         throw new Error("INSUFFICIENT_UP_AVAILABLE");
     }
 
-    await prisma.user_in_group.update({
+    uig = await prisma.user_in_group.update({
         where: {
             userid_chatid: {
                 userid: userid,
@@ -97,6 +99,8 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: bigint, amo
             up_available: uig.up_available + amount,
         }
     });
+
+    return uig.up_available;
 
 }
 
@@ -120,7 +124,7 @@ export async function upsertUserDownAvailable(userid: bigint, groupid: bigint, a
         throw new Error("INSUFFICIENT_DOWN_AVAILABLE");
     }
 
-    await prisma.user_in_group.update({
+    uig = await prisma.user_in_group.update({
         where: {
             userid_chatid: {
                 userid: userid,
@@ -131,6 +135,8 @@ export async function upsertUserDownAvailable(userid: bigint, groupid: bigint, a
             down_available: uig.down_available + amount,
         }
     });
+
+    return uig.down_available;
 
 }
 
