@@ -1,8 +1,10 @@
 import { Bot } from "grammy";
 import { Menu } from "@grammyjs/menu";
 import dotenv from 'dotenv';
+import cron from 'node-cron';
 import * as user_dao from "./daos/user_dao";
 import * as group_api from "./modules/group";
+import * as uig_dao from "./daos/user_in_group_dao";
 import * as user_api from "./modules/user";
 import { upsertGroup } from "./daos/group_dao";
 dotenv.config();
@@ -132,6 +134,12 @@ bot.on("my_chat_member", async (ctx) => {
 
 });
 
+
+// cronjob to reset the up and down available for all users in all groups at midnight
+cron.schedule('0 0 0 * * *', () => {
+    console.log('running a task every day at midnight');
+    uig_dao.resetAllUpAndDownAvailable();
+});
 
 // Start the bot (using long polling)
 bot.start();
