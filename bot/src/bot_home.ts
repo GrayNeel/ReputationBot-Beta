@@ -2,8 +2,8 @@ import { Bot } from "grammy";
 import { Menu } from "@grammyjs/menu";
 import dotenv from 'dotenv';
 import * as user_dao from "./daos/user_dao";
-import * as group_api from "./modules/data_structures/group";
-import * as user_api from "./modules/data_structures/user";
+import * as group_api from "./modules/group";
+import * as user_api from "./modules/user";
 import { upsertGroup } from "./daos/group_dao";
 dotenv.config();
 
