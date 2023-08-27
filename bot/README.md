@@ -4,7 +4,7 @@
 1. install globally node-ts `npm install -g node-ts` 
 2. npm install in bot directory
 3. run postgresql database in docker with 
-`docker run --name my-postgres-container -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres
+`docker run --name my-postgres-container -e POSTGRES_PASSWORD=mysecretpassword -p 5432:5432 -d postgres`
 
 ## run
 run `npm run start-dev` in bot directory
