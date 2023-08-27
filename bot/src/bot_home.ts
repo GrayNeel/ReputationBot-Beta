@@ -1,8 +1,9 @@
 import { Bot } from "grammy";
+import { Menu } from "@grammyjs/menu";
 import dotenv from 'dotenv';
 import * as user_dao from "./daos/user_dao";
-import * as group_api from "./modules/group";
-import * as user_api from "./modules/user";
+import * as group_api from "./modules/data_structures/group";
+import * as user_api from "./modules/data_structures/user";
 import { upsertGroup } from "./daos/group_dao";
 dotenv.config();
 
@@ -13,6 +14,18 @@ if (token === undefined) {
 
 // Create a bot object
 const bot = new Bot(token); // <-- place your bot token in this string
+
+const menu = new Menu("my-menu-identifier")
+  .text("A", (ctx) => ctx.reply("You pressed A!")).row()
+  .text("B", (ctx) => ctx.reply("You pressed B!"));
+
+
+bot.use(menu);
+
+bot.command("start", async (ctx) => {
+    // Send the menu.
+    await ctx.reply("Check out this menu:", { reply_markup: menu });
+  });
 
 // Register listeners to handle messages
 bot.on("message:text", (ctx) => {
@@ -96,7 +109,7 @@ bot.on("my_chat_member", async (ctx) => {
         return;
     }
 
-    if (type != "group" && type != "supergroup") throw new Error('type is neither channel, private, group or supergroup! it is \"' + type + '\" instead!');
+    if (type != "group" && type != "supergroup") throw new Error('type is neither channel, private, group or supergroup! it is "' + type + '" instead!');
 
     //type can only be group or supergroup at this point
     const group = group_api.parseGroup(ctx);
@@ -118,6 +131,7 @@ bot.on("my_chat_member", async (ctx) => {
     //}
 
 });
+
 
 // Start the bot (using long polling)
 bot.start();
