@@ -8,13 +8,18 @@ const MAX_DOWN_AVAILABLE = 2;
 
 export async function resetAllUpAndDownAvailable() {
 
-    prisma.user_in_group.updateMany({
+    const update_count = await prisma.user_in_group.updateMany({
+        //where: {
+        //    up_available: { not: MAX_UP_AVAILABLE },
+        //    down_available: { not: MAX_DOWN_AVAILABLE }
+        //},
         data: {
             up_available: MAX_UP_AVAILABLE,
             down_available: MAX_DOWN_AVAILABLE
         }
     });
-
+    
+    return update_count;
 }
 
 /**
