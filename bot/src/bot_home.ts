@@ -25,72 +25,67 @@ bot.chatType("private").command("start", async (ctx) => {
     menu_api.print_menu(ctx);
   });
 
-// Register listeners to handle messages
-bot.on("message:text", (ctx) => {
 
-    //parse the user from the context
-    const sender = user_api.parseSender(ctx);
-    user_dao.upsertUser(sender);
-
-    //if te message is not a reply, return
-    if (ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined){
+function isReply(ctx: Context){
+    if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined){
         console.log("ignore because: msg is not a reply");
-        return;
+        return false;
     }
-    
-    //parse receiver from the context
+    return true;
+}
+
+// Register listeners to handle messages
+bot.on("message:text").filter(isReply).hears(/[+-].*/, async (ctx) => {
+
+    const sender = user_api.parseSender(ctx);
     const receiver = user_api.parseReceiver(ctx);
+    const group = group_api.parseGroup(ctx);
+    
+    user_dao.upsertUser(sender);
     user_dao.upsertUser(receiver);
 
-    //parse group from the context
-    const group = group_api.parseGroup(ctx);
+    const decrease_available = -1;
+    let change_rep_value = 1;
+    let new_available = -1;
+    let new_rep = 0;
+    const is_up = ctx.message.text.startsWith("+");
 
     // handle messages starting with "+" (plus) that are replies to other messages
-    if (ctx.message.text.startsWith("+")) {
+    if (is_up) {
 
-        const increase_rep_value = 1;
-        const decrease_up_value = -1;
+        try { new_available = await uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_available, false) } 
+        catch (e) {
+            console.log(e);
+            ctx.reply("not enough up available");
+            return;
+        }
+        
+    } else {
 
-        // upsert receiver reputation
-        let new_rep = uig_dao.upsertUserReputation(receiver.userid, group.chatid, increase_rep_value, false);
-        // upsert sender up available
-        let new_available = uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_up_value, false);
-        print_rep_update(ctx, new_rep, new_available, receiver, sender);
-
-    } else if (ctx.message.text.startsWith("-")) {
-
-        const decrease_rep_value = -1;
-        const decrease_up_value = -1;
-
-        // upsert receiver reputation
-        let new_rep = uig_dao.upsertUserReputation(receiver.userid, group.chatid, decrease_rep_value, false);
-        // upsert sender down available
-        let new_available = uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_up_value, false);
-        print_rep_update(ctx, new_rep, new_available, receiver, sender);
+        try { new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false) } 
+        catch (e) {
+            console.log(e);
+            ctx.reply("Not enough down available");
+            return;
+        }
+        change_rep_value *= -1;
     }
+    
+    try { new_rep = await uig_dao.upsertUserReputation(receiver.userid, group.chatid, change_rep_value, false) }
+    catch (e) {
+        ctx.reply("Error while updating receiver reputation: \n" + e);
+    }
+    
+    print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
 });
 
-async function print_rep_update(ctx: Context, new_rep: Promise<number>, new_available: Promise<number>, receiver: User, sender: User, is_up: boolean = true){
-    new_available.then((new_available) => {
-        new_rep.then((new_rep) => {
-            let success_msg = "";
-            success_msg += receiver.username !== undefined ? "@" + receiver.username : receiver.firstname;
-            success_msg += " reputation";
-            success_msg += is_up ? " incremented!" : "decremented!";
-            success_msg += "("+ new_rep +")\n";
-            success_msg += sender.username !== undefined ? "@" + sender.username : sender.firstname + " has " + new_available;
-            success_msg += is_up ? " up left!" : " down left!";
-            ctx.reply(success_msg);
-        }
-        ).catch((e) => {
-            console.log(e);
-            ctx.reply("Error while updating receiver reputation");
-        });
-    }
-    ).catch((e) => {
-        console.log(e);
-        ctx.reply("Error while updating sender up available" + e);
-    });
+function print_rep_update(ctx: Context, new_rep: number, new_available: number, receiver: User, sender: User, is_up: boolean){
+    let success_msg = "";
+    success_msg += (receiver.username !== undefined ? "@" + receiver.username : receiver.firstname)+ " reputation";
+    success_msg += (is_up ? " incremented!" : " decremented!") + " ("+ new_rep +")\n";
+    success_msg += (sender.username !== undefined ? "@" + sender.username : sender.firstname) + " has " + new_available;
+    success_msg += is_up ? " up left!" : " down left!";
+    ctx.reply(success_msg);
 }
 
 
