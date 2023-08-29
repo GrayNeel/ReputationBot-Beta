@@ -18,3 +18,13 @@ export async function upsertUser(user: User) {
         }
     });
 }
+
+export async function getUserById(userid: bigint) {
+
+    const user = await prisma.user.findUnique({
+        where: { userid: userid }
+    });
+
+    return user;
+}
+
