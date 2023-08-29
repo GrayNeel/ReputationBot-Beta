@@ -1,4 +1,4 @@
-import { Bot, Context} from "grammy";
+import { Bot, Context, InlineKeyboard } from "grammy";
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 import * as user_dao from "./daos/user_dao";
@@ -23,24 +23,35 @@ bot.use(menu_api.start_menu);
 bot.chatType("private").command("start", async (ctx) => {
     // Send the menu.
     menu_api.print_menu(ctx);
-  });
+});
 
 
-function isReply(ctx: Context){
-    if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined){
+function isReplyNoBots(ctx: Context) {
+    if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined) {
         console.log("ignore because: msg is not a reply");
         return false;
     }
+    if( ctx.message.reply_to_message.from.is_bot || ctx.message.from.is_bot ){
+        console.log("ignore because: msg is sent to or from a bot");
+        return false;
+    }
+    
     return true;
 }
 
 // Register listeners to handle messages
-bot.on("message:text").filter(isReply).hears(/[+-].*/, async (ctx) => {
+bot.on("message:text").filter(isReplyNoBots).hears(/[+-].*/, async (ctx) => {
 
     const sender = user_api.parseSender(ctx);
     const receiver = user_api.parseReceiver(ctx);
+
+    if(sender.userid === receiver.userid){
+        ctx.reply("🤨 You can't give reputation to yourself!");
+        return;
+    }
+
     const group = group_api.parseGroup(ctx);
-    
+
     user_dao.upsertUser(sender);
     user_dao.upsertUser(receiver);
 
@@ -53,16 +64,16 @@ bot.on("message:text").filter(isReply).hears(/[+-].*/, async (ctx) => {
     // handle messages starting with "+" (plus) that are replies to other messages
     if (is_up) {
 
-        try { new_available = await uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_available, false) } 
+        try { new_available = await uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_available, false) }
         catch (e) {
             console.log(e);
-            ctx.reply("not enough up available");
+            print_not_enough_up_available(ctx, receiver, sender);
             return;
         }
-        
+
     } else {
 
-        try { new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false) } 
+        try { new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false) }
         catch (e) {
             console.log(e);
             ctx.reply("Not enough down available");
@@ -70,23 +81,72 @@ bot.on("message:text").filter(isReply).hears(/[+-].*/, async (ctx) => {
         }
         change_rep_value *= -1;
     }
-    
+
     try { new_rep = await uig_dao.upsertUserReputation(receiver.userid, group.chatid, change_rep_value, false) }
     catch (e) {
         ctx.reply("Error while updating receiver reputation: \n" + e);
     }
-    
+
     print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
 });
 
-function print_rep_update(ctx: Context, new_rep: number, new_available: number, receiver: User, sender: User, is_up: boolean){
+function print_rep_update(ctx: Context, new_rep: number, new_available: number, receiver: User, sender: User, is_up: boolean) {
     let success_msg = "";
-    success_msg += (receiver.username !== undefined ? "@" + receiver.username : receiver.firstname)+ " reputation";
-    success_msg += (is_up ? " incremented!" : " decremented!") + " ("+ new_rep +")\n";
-    success_msg += (sender.username !== undefined ? "@" + sender.username : sender.firstname) + " has " + new_available;
+    success_msg += (receiver.username !== "" ? "@" + receiver.username : receiver.firstname) + " reputation";
+    success_msg += (is_up ? " incremented!" : " decremented!") + " (" + new_rep + ")\n";
+    success_msg += (sender.username !== "" ? "@" + sender.username : sender.firstname) + " has " + new_available;
     success_msg += is_up ? " up left!" : " down left!";
     ctx.reply(success_msg);
 }
+
+function generateSacrificeButton(senderId: bigint, receiverId: bigint ) : InlineKeyboard {
+    let data = "sacrifice-click " + senderId + " " + receiverId;
+    console.log(data);
+    return new InlineKeyboard().text("🔥Sacrifice🔥", data );
+}
+
+function print_not_enough_up_available(ctx: Context, receiver: User, sender: User) {
+    let msg = "";
+    msg += (sender.username !== "" ? "@" + sender.username : sender.firstname) + " you have no more up available for today!";
+    msg += "\nYou can sacrifice one of your own reputation point to " + (receiver.username !== "" ? "@" + receiver.username : receiver.firstname) +" instead!"
+    ctx.reply(msg, { reply_markup: generateSacrificeButton(sender.userid, receiver.userid), reply_to_message_id: ctx.message?.message_id });
+}
+
+// Wait for click events with specific callback data.
+bot.callbackQuery(/sacrifice-click \d* \d*/, async (ctx) => {
+    
+    await ctx.answerCallbackQuery();
+    
+    let data = ctx.update.callback_query.data.split(" ");
+    let senderId = BigInt(data[1].trim());
+    let receiverId = BigInt(data[2]);
+    
+    //check if senderId is the same as the user that clicked the button
+    if( senderId !== BigInt(ctx.update.callback_query.from.id) ){
+        return;
+    }
+
+    const group = group_api.parseGroup(ctx);
+    let rec_rep = 0;
+    let send_rep = 0;
+    
+    try { 
+        //add 1 to the receiver reputation
+        rec_rep = await uig_dao.upsertUserReputation(receiverId, group.chatid, 1, false)
+        //remove 1 from the sender reputation
+        send_rep = await uig_dao.upsertUserReputation(senderId, group.chatid, -1, false)
+    }
+    catch (e) {
+        ctx.reply("Error while updating reputation: \n" + e);
+    }
+
+    let msg = ctx.update.callback_query.message;
+    if( msg === undefined ) throw new Error("msg is undefined");
+    ctx.editMessageReplyMarkup( { reply_markup: new InlineKeyboard } );
+    ctx.editMessageText("Successful Sacrifice!\n📈 their new reputation: " + rec_rep + "\n📉 your new reputation: " + send_rep);
+    
+
+  });
 
 
 /// detect when happens something to the "chat member" status of this bot, it triggers
@@ -116,7 +176,7 @@ bot.on("my_chat_member", async (ctx) => {
     const group = group_api.parseGroup(ctx);
     const status = ctx.myChatMember.new_chat_member.status;
 
-    if( status == "member" ){
+    if (status == "member") {
         //it means the bot has been added to this group
         upsertGroup(group);
     }
