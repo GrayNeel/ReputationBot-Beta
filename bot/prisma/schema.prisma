@@ -26,7 +26,6 @@ model Group {
 }
 
 model user_in_group {
-  //id               Int      @id @default(autoincrement())
   userid           BigInt
   chatid           BigInt
   is_admin         Boolean  @default(false)
