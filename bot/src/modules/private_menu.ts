@@ -30,7 +30,7 @@ async function print_my_groups(ctx: Context) {
         let group = await group_dao.getGroup(uig.chatid);
         if (group === null) throw new Error("group is null");
 
-        ctx.reply("NAME: " + group.title + "\nID: (" + group.chatid + ")" + "\nREPUTATION: " + uig.reputation);
+        ctx.reply("NAME: " + group.title + "\nREPUTATION: " + uig.reputation);
     }
     
 

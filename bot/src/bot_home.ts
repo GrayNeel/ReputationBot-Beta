@@ -27,7 +27,7 @@ bot.chatType("private").command("start", async (ctx) => {
 
 
 function isReplyNoBots(ctx: Context) {
-    if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined) {
+    if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined || ctx.message.reply_to_message.text === undefined) {
         console.log("ignore because: msg is not a reply");
         return false;
     }
@@ -39,9 +39,18 @@ function isReplyNoBots(ctx: Context) {
     return true;
 }
 
-// Register listeners to handle messages
-bot.on("message:text").filter(isReplyNoBots).hears(/[+-].*/, async (ctx) => {
+//a function to transform a Date in milliseconds into a string in the format "YYYY-MM-DD HH:MM:SS"
+//intended to be used for logging
+function dateToStr(dateInMs: number): string {
+    const date = new Date(dateInMs);
+    return date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds();
+}
 
+// Register listeners to handle messages
+bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
+
+    //console.log("-----------Message At: " + dateToStr(Date.now()) + "------------------------");
+    //console.log(ctx.message);
     const sender = user_api.parseSender(ctx);
     const receiver = user_api.parseReceiver(ctx);
 
@@ -96,7 +105,13 @@ function print_rep_update(ctx: Context, new_rep: number, new_available: number, 
     success_msg += (is_up ? " incremented!" : " decremented!") + " (" + new_rep + ")\n";
     success_msg += (sender.username !== "" ? "@" + sender.username : sender.firstname) + " has " + new_available;
     success_msg += is_up ? " up left!" : " down left!";
-    ctx.reply(success_msg);
+    if( ctx.message?.is_topic_message ){
+        ctx.reply(success_msg, { message_thread_id: ctx.message?.message_thread_id });
+        console.log("replied to a topic message");
+    }
+    else {
+        ctx.reply(success_msg);
+    }
 }
 
 function generateSacrificeButton(senderId: bigint, receiverId: bigint ) : InlineKeyboard {
