@@ -39,6 +39,17 @@ function isReplyNoBots(ctx: Context) {
     return true;
 }
 
+function replyTopicAware(ctx: Context, msg: string) {
+
+    if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
+    if (ctx.message === undefined) throw new Error('ctx.message is UNDEFINED!');
+    if( ctx.message?.is_topic_message ){
+        ctx.reply(msg, { message_thread_id: ctx.message?.message_thread_id });
+    } else {
+        ctx.reply(msg);
+    }
+}
+
 //a function to transform a Date in milliseconds into a string in the format "YYYY-MM-DD HH:MM:SS"
 //intended to be used for logging
 function dateToStr(dateInMs: number): string {
@@ -55,7 +66,8 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
     const receiver = user_api.parseReceiver(ctx);
 
     if(sender.userid === receiver.userid){
-        ctx.reply("🤨 You can't give reputation to yourself!");
+        //ctx.reply("🤨 You can't give reputation to yourself!");
+        replyTopicAware(ctx,"🤨 You can't give reputation to yourself!")
         return;
     }
 
@@ -105,13 +117,7 @@ function print_rep_update(ctx: Context, new_rep: number, new_available: number, 
     success_msg += (is_up ? " incremented!" : " decremented!") + " (" + new_rep + ")\n";
     success_msg += (sender.username !== "" ? "@" + sender.username : sender.firstname) + " has " + new_available;
     success_msg += is_up ? " up left!" : " down left!";
-    if( ctx.message?.is_topic_message ){
-        ctx.reply(success_msg, { message_thread_id: ctx.message?.message_thread_id });
-        console.log("replied to a topic message");
-    }
-    else {
-        ctx.reply(success_msg);
-    }
+    replyTopicAware(ctx, success_msg);
 }
 
 function generateSacrificeButton(senderId: bigint, receiverId: bigint ) : InlineKeyboard {
