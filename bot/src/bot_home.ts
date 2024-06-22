@@ -28,11 +28,11 @@ bot.chatType("private").command("start", async (ctx) => {
 
 function isReplyNoBots(ctx: Context) {
     if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined || ctx.message.reply_to_message.text === undefined) {
-        console.log("ignore because: msg is not a reply");
+        //console.log("ignore because: msg is not a reply");
         return false;
     }
     if( ctx.message.reply_to_message.from.is_bot || ctx.message.from.is_bot ){
-        console.log("ignore because: msg is sent to or from a bot");
+        //console.log("ignore because: msg is sent to or from a bot");
         return false;
     }
     
@@ -217,10 +217,73 @@ bot.on("my_chat_member", async (ctx) => {
 
 // cronjob to reset the up and down available for all users in all groups at midnight
 cron.schedule('0 0 0 * * *', async () => {
-    console.log('running a task every day at midnight');
+    console.log('running the reset task every day at midnight');
     await uig_dao.resetAllUpAndDownAvailable();
 });
 
+
+//handle commands in public chats
+bot.command("start", async (ctx) => {
+
+    // Send the menu.
+    menu_api.print_menu(ctx);
+})
+
+bot.api.setMyCommands([
+    {
+        command: "myrep",
+        description: "Your reputation in this group",
+    },
+    {
+        command: "toprep",
+        description: "users with top reputation in this group",
+    },
+]);
+
+bot.command("myrep", async (ctx) => {
+    // make sure this is NOT a private chat
+    if (ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup") {
+        ctx.reply("This command is only available in groups. Use it in the group you want to check your reputation in.");
+        return;
+    }
+    
+    // get the reputation of the user in the group
+    const group = group_api.parseGroup(ctx);
+    const user = user_api.parseSender(ctx);
+
+    const rep = await uig_dao.getUserReputation(user.userid, group.chatid);
+    replyTopicAware(ctx,"The reputation of " + (user.username !== "" ? "@" + user.username : user.firstname) + " in this group is " + rep);
+})
+
+bot.command("toprep", async (ctx) => {
+    // make sure this is NOT a private chat
+    if (ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup") {
+        ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
+        return;
+    }
+    
+    // read the number of users to retrieve
+    let n_users = 10;
+    if (ctx.match !== undefined) {
+        n_users = parseInt(ctx.match[0]);
+        if (isNaN(n_users)) n_users = 10;
+        if (n_users < 1) n_users = 1;
+        if (n_users > 25) n_users = 25;
+    }
+
+    console.log("n_users: " + n_users);
+
+    // get the reputation of the user in the group
+    const group = group_api.parseGroup(ctx);
+    // TODO: complete this function
+    //const users = await uig_dao.getTopNUsers(group.chatid, n_users);
+    //let msg = "The top users in this group are:\n";
+//
+    //for (const user of users) {
+    //    msg += (user.username !== "" ? "@" + user.username : user.firstname) + " with " + user.reputation + " reputation\n";
+//
+    //}
+})
 
 // Start the bot (using long polling)
 bot.start();
