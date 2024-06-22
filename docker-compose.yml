@@ -1,14 +1,31 @@
-version: '2'
+version: '3.8'
 
 volumes:
-  postgresdata:
+  postgres-data:
 
 services:
   postgres:
-      image: postgres:latest
-      environment:
-        POSTGRES_PASSWORD: mysecretpassword
-      ports:
-        - 5432:5432
-      volumes:
-        - postgresdata:/var/lib/postgresql/data
+    image: postgres:latest
+    container_name: pgsql
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+
+  bot:
+    depends_on:
+      - postgres
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: repbot
+    environment:
+      DATABASE_URL: "postgresql://postgres:mysecretpassword@postgres:5432/postgres"
+    restart: always
+    ports:
+      - "8080:8080"
