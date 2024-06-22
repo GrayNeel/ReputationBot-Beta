@@ -4,18 +4,22 @@ import * as uig_dao from "../daos/user_in_group_dao";
 import * as group_dao from "../daos/group_dao";
 
 export const start_menu = new Menu("my-menu-identifier")
-.text("Get my groups", (ctx) => print_my_groups(ctx)).row()
-.text("B", (ctx) => ctx.reply("You pressed B!"));
+.text("Get my groups", (ctx) => print_my_groups(ctx)).row();
+//.text("B", (ctx) => ctx.reply("You pressed B!"));
 
 export  async function print_menu( ctx : Context ) {
     await ctx.reply("Check out this menu:", { reply_markup: start_menu });
 }
 
 async function print_my_groups(ctx: Context) {
-    if (ctx.chat?.type !== "private")
-        throw new Error("This command is only available in private chats");
+    if (ctx.chat?.type !== "private"){
+        //throw new Error("This command is only available in private chats");
+        ctx.reply("This command is only available in private chats");
+        console.log("print_my_groups command used in chat:" + ctx.chat?.type + " id:" + ctx.chat?.id);
+        return;
+    }
 
-    ctx.reply("You are in the following groups: ");
+    ctx.reply("We are both in the following groups: ");
     const user = ctx.from;
     if (user === undefined) throw new Error("ctx.from is undefined");
 
@@ -30,7 +34,7 @@ async function print_my_groups(ctx: Context) {
         let group = await group_dao.getGroup(uig.chatid);
         if (group === null) throw new Error("group is null");
 
-        ctx.reply("NAME: " + group.title + "\nREPUTATION: " + uig.reputation);
+        ctx.reply("<b>" + group.title + "</b>\nREP: " + uig.reputation, { parse_mode : "HTML" });
     }
     
 
