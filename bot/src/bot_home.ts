@@ -97,7 +97,7 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
         try { new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false) }
         catch (e) {
             console.log(e);
-            ctx.reply("Not enough down available");
+            replyTopicAware(ctx,"Not enough down available");
             return;
         }
         change_rep_value *= -1;
@@ -105,7 +105,7 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
 
     try { new_rep = await uig_dao.upsertUserReputation(receiver.userid, group.chatid, change_rep_value, false) }
     catch (e) {
-        ctx.reply("Error while updating receiver reputation: \n" + e);
+        replyTopicAware(ctx,"Error while updating receiver reputation: \n" + e);
     }
 
     print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
