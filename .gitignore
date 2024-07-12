@@ -4,3 +4,4 @@
 **/target
 **/.vscode
 **/*.sql
+**/*package-lock.json
