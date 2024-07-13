@@ -273,16 +273,20 @@ bot.command("toprep", async (ctx) => {
 
     console.log("n_users: " + n_users);
 
+    let msg = "The top users in this group are:\n";
     // get the reputation of the user in the group
     const group = group_api.parseGroup(ctx);
     // TODO: complete this function
-    //const users = await uig_dao.getTopNUsers(group.chatid, n_users);
-    //let msg = "The top users in this group are:\n";
-//
-    //for (const user of users) {
-    //    msg += (user.username !== "" ? "@" + user.username : user.firstname) + " with " + user.reputation + " reputation\n";
-//
-    //}
+    const uig_users = await uig_dao.getTopNUsers(group.chatid, n_users);
+    //let users : User[] = [];
+    for (const u of uig_users) {
+        let user = await user_dao.getUserById(u.userid) as User;
+        msg += (user.username !== "" ? "@" + user.username : user.firstname) + " with " + u.reputation + " reputation\n";
+        //users.push(user);
+    }
+
+    replyTopicAware(ctx, msg);
+    
 })
 
 // Start the bot (using long polling)
