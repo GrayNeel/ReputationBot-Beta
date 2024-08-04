@@ -48,7 +48,7 @@ with open(file = input_file, mode = "r", encoding = "utf-8") as file:
                     is_silent = "false"
 
                 # Create the INSERT INTO statement
-                insert_statement = f"INSERT INTO \"Group\" (\"chatid\", \"name\", \"type\", \"is_silent\") VALUES ({chatid}, '{title}', '{group_type}', {is_silent});"
+                insert_statement = f"INSERT INTO \"Group\" (\"chatid\", \"title\", \"type\", \"is_silent\") VALUES ({chatid}, '{title}', '{group_type}', {is_silent});"
                 
                 # add the entry chatid: insert_statement to the group_lines dictionary
                 group_lines[chatid] = insert_statement
@@ -120,7 +120,7 @@ with open(file = input_file, mode = "r", encoding = "utf-8") as file:
                 # avoid inserting the private chats (where chatid == userid)
                 if chatid != userid:
                     # Create the INSERT INTO statement for the 'user_in_group' table
-                    insert_statement = f"INSERT INTO \"user_in_group\" (\"id\", \"userid\", \"chatid\", \"is_admin\", \"first_seen\", \"last_seen\", \"reputation\", \"reputation_today\", \"messages\", \"messages_today\", \"up_available\", \"down_available\", \"beast_mode\") VALUES (default, {userid}, {chatid}, false, '{first_seen}', '{last_seen}', {reputation}, {reputation_today}, {messages}, {messages_today}, {up_available}, {down_available}, {beast_mode});"
+                    insert_statement = f"INSERT INTO \"user_in_group\" (\"userid\", \"chatid\", \"is_admin\", \"first_seen\", \"last_seen\", \"reputation\", \"reputation_today\", \"messages\", \"messages_today\", \"up_available\", \"down_available\", \"beast_mode\") VALUES ({userid}, {chatid}, false, '{first_seen}', '{last_seen}', {reputation}, {reputation_today}, {messages}, {messages_today}, {up_available}, {down_available}, {beast_mode});"
 
                     # Add the statement to the user_in_group_lines list
                     user_in_group_lines.append(insert_statement)
