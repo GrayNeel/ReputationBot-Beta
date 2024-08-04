@@ -5,7 +5,7 @@ input_file = "dump.sql"
 output_file = "output.sql"
 
 # Open the input file
-with open(input_file, "r") as file:
+with open(file = input_file, mode = "r", encoding = "utf-8") as file:
     # Initialize flag and group_lines dictionary
     processing_groups = False
     group_lines = {}
@@ -127,7 +127,7 @@ with open(input_file, "r") as file:
 
 
 # Write the group lines to the output file
-with open(output_file, "w") as output:
+with open(file = output_file, mode = "w", encoding = "utf-8") as output:
     output.writelines("\n".join(user_lines.values()))
     output.writelines("\n".join(group_lines.values()))
     output.writelines("\n".join(user_in_group_lines))
