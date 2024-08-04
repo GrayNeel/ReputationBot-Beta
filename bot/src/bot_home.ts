@@ -273,7 +273,7 @@ bot.command("toprep", async (ctx) => {
 
     console.log("n_users: " + n_users);
 
-    let msg = "The top users in this group are:\n";
+    let msg = "The top" + n_users + " users in this group are:\n";
     // get the reputation of the user in the group
     const group = group_api.parseGroup(ctx);
     // TODO: complete this function
