@@ -245,7 +245,7 @@ bot.on("my_chat_member", async (ctx) => {
 // cronjob to reset the up and down available for all users in all groups at midnight
 cron.schedule('0 0 0 * * *', async () => {
     console.log('running the reset task every day at midnight');
-    await uig_dao.resetAllUpAndDownAvailable();
+    await uig_dao.midnightReset();
 });
 
 

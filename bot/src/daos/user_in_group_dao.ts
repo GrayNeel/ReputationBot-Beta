@@ -6,7 +6,7 @@ const MAX_DOWN_AVAILABLE = 2;
 
 // set up_available = 10 and down_available = 2 for every user in every group
 
-export async function resetAllUpAndDownAvailable() {
+export async function midnightReset() {
 
     const update_count = await prisma.user_in_group.updateMany({
         //where: {
@@ -15,7 +15,8 @@ export async function resetAllUpAndDownAvailable() {
         //},
         data: {
             up_available: MAX_UP_AVAILABLE,
-            down_available: MAX_DOWN_AVAILABLE
+            down_available: MAX_DOWN_AVAILABLE,
+            messages_today: 0
         }
     });
     
