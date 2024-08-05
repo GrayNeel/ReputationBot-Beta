@@ -138,6 +138,10 @@ function print_not_enough_up_available(ctx: Context, receiver: User, sender: Use
     ctx.reply(msg, { reply_markup: generateSacrificeButton(sender.userid, receiver.userid), reply_to_message_id: ctx.message?.message_id });
 }
 
+function is_not_group( ctx: Context ) : boolean {
+    return ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup"
+}
+
 // Wait for click events with specific callback data.
 bot.callbackQuery(/sacrifice-click \d* \d*/, async (ctx) => {
     
@@ -251,7 +255,7 @@ bot.api.setMyCommands([
 
 bot.command("myrep", async (ctx) => {
     // make sure this is NOT a private chat
-    if (ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup") {
+    if (is_not_group(ctx)) {
         ctx.reply("This command is only available in groups. Use it in the group you want to check your reputation in.");
         return;
     }
@@ -266,7 +270,7 @@ bot.command("myrep", async (ctx) => {
 
 bot.command("toprep", async (ctx) => {
     // make sure this is NOT a private chat
-    if (ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup") {
+    if (is_not_group(ctx)) {
         ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
         return;
     }
@@ -300,7 +304,7 @@ bot.command("toprep", async (ctx) => {
 
 bot.command("topmess", async (ctx) => {
     // make sure this is NOT a private chat
-    if (ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup") {
+    if (is_not_group(ctx)) {
         ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
         return;
     }
