@@ -215,3 +215,31 @@ export async function getTopNUsersByMessages(groupid: bigint, n_users: number) {
 
     return uig_users
 }
+
+/**
+ * Function to update the messages sent by a user in a group, 
+ * it also adds a new entry in the user_in_group table if the user is not already associated with the group
+ * @param userid the id of the user
+ * @param groupid the id of the group where we have to update the user number of messages
+ * @param is_admin if the user is an admin or not of that group (needed in case the user is not alread associated with the group)
+ */
+export async function upsertUserMessages(userid: bigint, groupid: bigint, is_admin: boolean) {
+
+    let uig = await upsertUserInGroup(userid, groupid, is_admin);
+
+    uig = await prisma.user_in_group.update({
+        where: {
+            userid_chatid: {
+                userid: userid,
+                chatid: groupid
+            }
+        },
+        data: {
+            messages: uig.messages + 1,
+            messages_today: uig.messages_today + 1
+        }
+    });
+
+    return uig.messages;
+
+}
