@@ -39,6 +39,13 @@ function isReplyNoBots(ctx: Context) {
     return true;
 }
 
+function notFromBots(ctx: Context) {
+    if (ctx.message === undefined || ctx.message.from === undefined || ctx.message.from.is_bot) {
+        return false;
+    }
+    return true;
+}
+
 //this function could also have a third optional "other" parameter that can be used in the ctx.reply function 
 function replyTopicAware(ctx: Context, msg: string, other?: any) {
 
@@ -114,6 +121,17 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
     }
 
     print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
+});
+
+bot.on("message:text").filter(notFromBots).hears(/^[^/+-].*/, async (ctx) => {
+
+    const sender = user_api.parseSender(ctx);
+    const group = group_api.parseGroup(ctx);
+
+    user_dao.upsertUser(sender);
+    uig_dao.upsertUserMessages(sender.userid, group.chatid, false);
+
+
 });
 
 function print_rep_update(ctx: Context, new_rep: number, new_available: number, receiver: User, sender: User, is_up: boolean) {
