@@ -81,6 +81,8 @@ export async function upsertUserReputation(userid: bigint, groupid: bigint, amou
  * @param groupid the id of the group where we have to update the user "up" availability
  * @param amount the amount of up availables to add or subtract (usually set to -1)
  * @param is_admin if the user is an admin or not of that group (needed in case the user is not already associated with the group)
+ * 
+ * @returns the new up_available, if -1 it means that there are not enough up_available
  */
 export async function upsertUserUpAvailable(userid: bigint, groupid: bigint, amount: number, is_admin: boolean) {
 
@@ -91,7 +93,8 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: bigint, amo
     if (uig.up_available + amount < 0) {
         //TODO: add a message to the user to tell him that he doesn't have enough up_available
         // maybe at the upper level of the code, in the module that calls this function
-        throw new Error("INSUFFICIENT_UP_AVAILABLE");
+        //throw new Error("INSUFFICIENT_UP_AVAILABLE");
+        return -1;
     }
 
     uig = await prisma.user_in_group.update({
@@ -117,6 +120,8 @@ export async function upsertUserUpAvailable(userid: bigint, groupid: bigint, amo
  * @param groupid the id of the group where we have to update the user "down" availability
  * @param amount the amount of down availables to add or subtract (usually set to -1)
  * @param is_admin if the user is an admin or not of that group (needed in case the user is not alread associated with the group)
+ * 
+ * @returns the new douwn_available, if -1 it means that there are not enough down_available
  */
 export async function upsertUserDownAvailable(userid: bigint, groupid: bigint, amount: number, is_admin: boolean) {
 
@@ -127,7 +132,8 @@ export async function upsertUserDownAvailable(userid: bigint, groupid: bigint, a
     if (uig.down_available + amount < 0) {
         //TODO: add a message to the user to tell him that he doesn't have enough down_available
         // maybe at the upper level of the code, in the module that calls this function
-        throw new Error("INSUFFICIENT_DOWN_AVAILABLE");
+        //throw new Error("INSUFFICIENT_DOWN_AVAILABLE");
+        return -1;
     }
 
     uig = await prisma.user_in_group.update({

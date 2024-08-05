@@ -97,18 +97,16 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
     // handle messages starting with "+" (plus) that are replies to other messages
     if (is_up) {
 
-        try { new_available = await uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_available, false) }
-        catch (e) {
-            console.log(e);
+        new_available = await uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_available, false);
+        if (new_available == -1) {
             print_not_enough_up_available(ctx, receiver, sender);
             return;
         }
 
     } else {
 
-        try { new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false) }
-        catch (e) {
-            console.log(e);
+        new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false)
+        if (new_available == -1) {
             replyTopicAware(ctx,"Not enough down available");
             return;
         }
