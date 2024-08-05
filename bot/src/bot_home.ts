@@ -39,12 +39,17 @@ function isReplyNoBots(ctx: Context) {
     return true;
 }
 
-function replyTopicAware(ctx: Context, msg: string) {
+//this function could also have a third optional "other" parameter that can be used in the ctx.reply function 
+function replyTopicAware(ctx: Context, msg: string, other?: any) {
 
     if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
     if (ctx.message === undefined) throw new Error('ctx.message is UNDEFINED!');
     if( ctx.message?.is_topic_message ){
-        ctx.reply(msg, { message_thread_id: ctx.message?.message_thread_id });
+        let modifiers = { message_thread_id: ctx.message?.message_thread_id };
+        if (other !== undefined) {
+            modifiers = { ...modifiers, ...other };
+        }
+        ctx.reply(msg, modifiers);
     } else {
         ctx.reply(msg);
     }
@@ -238,6 +243,10 @@ bot.api.setMyCommands([
         command: "toprep",
         description: "users with top reputation in this group",
     },
+    {
+        command: "topmess",
+        description: "users with the most messages in this group",
+    },
 ]);
 
 bot.command("myrep", async (ctx) => {
@@ -273,19 +282,52 @@ bot.command("toprep", async (ctx) => {
 
     console.log("n_users: " + n_users);
 
-    let msg = "The top" + n_users + " users in this group are:\n";
+    let msg = "The top " + n_users + " users in this group are:\n";
     // get the reputation of the user in the group
     const group = group_api.parseGroup(ctx);
     // TODO: complete this function
-    const uig_users = await uig_dao.getTopNUsers(group.chatid, n_users);
+    const uig_users = await uig_dao.getTopNUsersByReputation(group.chatid, n_users);
     //let users : User[] = [];
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
-        msg += (user.username !== "" ? "@" + user.username : user.firstname) + " with " + u.reputation + " reputation\n";
-        //users.push(user);
+        //msg += (user.username !== "" ? "@" + user.username : user.firstname) + " with " + u.reputation + " reputation\n";
+        msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
     }
 
-    replyTopicAware(ctx, msg);
+    replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
+    
+})
+
+bot.command("topmess", async (ctx) => {
+    // make sure this is NOT a private chat
+    if (ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup") {
+        ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
+        return;
+    }
+    
+    // read the number of users to retrieve
+    let n_users = 10;
+    if (ctx.match !== undefined) {
+        n_users = parseInt(ctx.match[0]);
+        if (isNaN(n_users)) n_users = 10;
+        if (n_users < 1) n_users = 1;
+        if (n_users > 25) n_users = 25;
+    }
+
+    console.log("n_users: " + n_users);
+
+    let msg = "The top " + n_users + " writers in this group are:\n";
+    // get the reputation of the user in the group
+    const group = group_api.parseGroup(ctx);
+    // TODO: complete this function
+    const uig_users = await uig_dao.getTopNUsersByMessages(group.chatid, n_users);
+    //let users : User[] = [];
+    for (const u of uig_users) {
+        let user = await user_dao.getUserById(u.userid) as User;
+        msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.messages + ")\n";
+    }
+
+    replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
     
 })
 

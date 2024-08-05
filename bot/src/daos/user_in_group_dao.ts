@@ -195,10 +195,21 @@ export async function getByUserId(userid: bigint) {
 }
 
 //get top N users by reputation
-export async function getTopNUsers(groupid: bigint, n_users: number) {
+export async function getTopNUsersByReputation(groupid: bigint, n_users: number) {
     let uig_users = await prisma.user_in_group.findMany({
         where: { chatid: groupid },
         orderBy: { reputation: 'desc' },
+        take: n_users
+    })
+
+    return uig_users
+}
+
+//get top N users by message count
+export async function getTopNUsersByMessages(groupid: bigint, n_users: number) {
+    let uig_users = await prisma.user_in_group.findMany({
+        where: { chatid: groupid },
+        orderBy: { messages: 'desc' },
         take: n_users
     })
 
