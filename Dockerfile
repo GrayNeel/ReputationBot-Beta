@@ -26,7 +26,7 @@ RUN npx prisma generate
 ENTRYPOINT ["/entrypoint.sh"]
 
 # Expose the application port (adjust as needed)
-EXPOSE 8080
+EXPOSE 8081
 
 # Default command to start your bot
 CMD ["ts-node", "src/bot_home.ts"]

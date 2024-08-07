@@ -1,5 +1,3 @@
-version: '3.8'
-
 volumes:
   postgres-data:
 
@@ -23,9 +21,9 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    container_name: repbot
+      #container_name: repbot
     environment:
       DATABASE_URL: "postgresql://postgres:mysecretpassword@postgres:5432/postgres"
     restart: always
     ports:
-      - "8080:8080"
+      - "8081:8081"
