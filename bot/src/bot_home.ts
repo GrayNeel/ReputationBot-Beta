@@ -51,13 +51,16 @@ function replyTopicAware(ctx: Context, msg: string, other?: any) {
     if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
     if (ctx.message === undefined) throw new Error('ctx.message is UNDEFINED!');
     if( ctx.message?.is_topic_message ){
+        
         let modifiers = { message_thread_id: ctx.message?.message_thread_id };
-        if (other !== undefined) {
-            modifiers = { ...modifiers, ...other };
-        }
+        if (other !== undefined) modifiers = { ...modifiers, ...other };
         ctx.reply(msg, modifiers);
+
     } else {
-        ctx.reply(msg);
+
+        if (other !== undefined) ctx.reply(msg, other);
+        else ctx.reply(msg);
+        
     }
 }
 
