@@ -60,7 +60,7 @@ function replyTopicAware(ctx: Context, msg: string, other?: any) {
 
         if (other !== undefined) ctx.reply(msg, other);
         else ctx.reply(msg);
-        
+
     }
 }
 
@@ -203,6 +203,8 @@ bot.callbackQuery(/sacrifice-click \d* \d*/, async (ctx) => {
 bot.on("my_chat_member", async (ctx) => {
 
     const chatMember = ctx.update.my_chat_member;
+
+    console.log('my_chat_member update:', chatMember.new_chat_member);
   
     // Check if the bot was added to a group
     if (chatMember.new_chat_member.status === 'member') {
