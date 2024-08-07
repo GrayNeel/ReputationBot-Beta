@@ -25,7 +25,6 @@ bot.chatType("private").command("start", async (ctx) => {
     menu_api.print_menu(ctx);
 });
 
-
 function isReplyNoBots(ctx: Context) {
     if (ctx.message === undefined || ctx.message.reply_to_message === undefined || ctx.message.reply_to_message.from === undefined || ctx.message.reply_to_message.text === undefined) {
         //console.log("ignore because: msg is not a reply");
@@ -200,42 +199,46 @@ bot.callbackQuery(/sacrifice-click \d* \d*/, async (ctx) => {
 /// - in private chats when the bot is started or stopped
 bot.on("my_chat_member", async (ctx) => {
 
-
-    if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
-    if (ctx.chat === undefined) throw new Error('ctx.chat is UNDEFINED!');
-
-    const type = ctx.chat.type;
-
-    if (type == "private") {
-        console.log("chat type: private");
-        return;
+    const chatMember = ctx.update.my_chat_member;
+  
+    // Check if the bot was added to a group
+    if (chatMember.new_chat_member.status === 'member') {
+      console.log('Bot added to a group:', chatMember.new_chat_member);
+      replyTopicAware(ctx, 'Hello! Thanks for adding me to this group! remember that i need to be an Admin to be able to work! :D');
+    }
+  
+    // Check if the bot was promoted to an admin
+    if (chatMember.new_chat_member.status === 'administrator') {
+      console.log('Bot promoted to admin in group:', chatMember.chat.id);
+      upsertGroup(group_api.parseGroup(ctx));
+      replyTopicAware(ctx, 'Yay! thanks for making me and admin! Now you can reply to users with a message starting with + or - to give them or subtract them a reputation point!');
     }
 
-    if (type == "channel") {
-        console.log("chat type: channel");
-        return;
-    }
+    // if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
+    // if (ctx.chat === undefined) throw new Error('ctx.chat is UNDEFINED!');
 
-    if (type != "group" && type != "supergroup") throw new Error('type is neither channel, private, group or supergroup! it is "' + type + '" instead!');
+    // const type = ctx.chat.type;
 
-    //type can only be group or supergroup at this point
-    const group = group_api.parseGroup(ctx);
-    const status = ctx.myChatMember.new_chat_member.status;
+    // if (type == "private") {
+    //     console.log("chat type: private");
+    //     return;
+    // }
 
-    if (status == "member") {
-        //it means the bot has been added to this group
-        upsertGroup(group);
-    }
-    /**
-     * TODO: decide if we want to implement data removal when the bot is removed from a group
-     */
-    //else if( status == "left" || status == "kicked" ){
-    //    //it means the bot has been removed from this group
-    //    //so i remove all the entries in user_in_group having this group as a foreign key
-    //    // TODO
-    //    //and then i remove the group
-    //    removeGroup(group);
-    //}
+    // if (type == "channel") {
+    //     console.log("chat type: channel");
+    //     return;
+    // }
+
+    // if (type != "group" && type != "supergroup") throw new Error('type is neither channel, private, group or supergroup! it is "' + type + '" instead!');
+
+    // //type can only be group or supergroup at this point
+    // const group = group_api.parseGroup(ctx);
+    // const status = ctx.myChatMember.new_chat_member.status;
+
+    // if (status == "member") {
+    //     //it means the bot has been added to this group
+    //     upsertGroup(group);
+    // }
 
 });
 
