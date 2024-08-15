@@ -149,11 +149,24 @@ bot.on("message:text").filter(notFromBots).hears(/^[^/+-].*/, async (ctx) => {
 
 function print_rep_update(ctx: Context, new_rep: number, new_available: number, receiver: User, sender: User, is_up: boolean) {
     let success_msg = "";
-    success_msg += (receiver.username !== "" ? "@" + receiver.username : receiver.firstname) + " reputation";
+    success_msg += "[" + receiver.firstname + " " + receiver.lastname + "](https://t.me/" + receiver.username + ")" + " reputation";
     success_msg += (is_up ? " incremented!" : " decremented!") + " (" + new_rep + ")\n";
-    success_msg += (sender.username !== "" ? "@" + sender.username : sender.firstname) + " has " + new_available;
+    switch (new_rep) {
+        case -150: success_msg += "🤨 are you a drunk driver or somethin?\n"; break;
+        case -100: success_msg += "wow people really hates you! 💔\n"; break;
+        case -69: success_msg += "eheheh 😏\n"; break;
+        case -10: success_msg += "wow people hates you\n"; break;
+        case -2: success_msg += "damn 💀\n"; break;
+        case -1: success_msg += "better than -2!\n"; break;
+        case 1: success_msg += "better than zero!\n"; break;
+        case 10: success_msg += "it looks like people loves you!\n"; break;
+        case 42: success_msg += "the answer to life, the universe, and everything!\n"; break;
+        case 69: success_msg += "eheheh 😏\n"; break;
+        case 100: success_msg += "wow people really loves you! 🤩\n"; break;
+    }
+    success_msg += "[" + sender.firstname + " " + sender.lastname + "](https://t.me/" + sender.username + ")" + " has " + new_available;
     success_msg += is_up ? " up left!" : " down left!";
-    replyTopicAware(ctx, success_msg);
+    replyTopicAware(ctx, success_msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
 }
 
 function generateSacrificeButton(senderId: bigint, receiverId: bigint): InlineKeyboard {
