@@ -39,7 +39,7 @@ group_list_menu.dynamic(async (ctx) => {
             continue;
         }
         const message = select_group_message(ctx, ctx.chat?.type, group.title, uig)
-        range.submenu(`${i}`, "selected-group-menu", ctx => ctx.editMessageText(message, { parse_mode: "HTML" }));
+        range.submenu({ text: `${i}`, payload: `${uig.chatid}` }, "selected-group-menu", ctx => ctx.editMessageText(message, { parse_mode: "HTML" }));
         i++;
     }
 
@@ -47,7 +47,7 @@ group_list_menu.dynamic(async (ctx) => {
 })
     .row()
     .text("Back to main menu", async (ctx) => {
-        await ctx.editMessageText(generate_main_menu_message());
+        await ctx.editMessageText(generate_main_menu_message(), { parse_mode: "HTML" });
         ctx.menu.nav("my-main-menu", { immediate: true })
     })
     .register(start_menu);
@@ -74,10 +74,64 @@ async function generate_group_list_menu_message(ctx: Context) {
 // ---- SELECTED GROUP MENU FUNCTIONS ---- //
 // define the menu for a selected group
 const selected_group_menu = new Menu("selected-group-menu");
-selected_group_menu.text("Back to groups list", async (ctx) => {
-    ctx.editMessageText(await generate_group_list_menu_message(ctx), { parse_mode: "HTML" });
-    ctx.menu.nav("group-list-menu")
-})
+selected_group_menu
+    .dynamic(async (ctx) => {
+
+        const user = ctx.from;
+        if (user === undefined) throw new Error("ctx.from is undefined");
+        const chatid = ctx.match;
+        if (chatid === undefined) throw new Error("ctx.match is undefined");
+        if (typeof chatid !== "string") throw new Error("ctx.match is not a string");
+        //i want to see if the user is an admin
+        const admins = await ctx.api.getChatAdministrators(chatid)
+        //console.log("\n\nadmins: " + JSON.stringify(admins));
+        const isAdmin = admins.some((admin) => admin.user.id === user.id);
+        //console.log("\nisAdmin: " + isAdmin);
+
+        const range = new MenuRange();
+        if (isAdmin) {
+            range.text({
+                text: async (ctx) => {
+
+                    const user = ctx.from;
+                    if (user === undefined) throw new Error("ctx.from is undefined");
+                    
+                    console.log("\n\nctx.match: " + ctx.match);
+                    const chatid = ctx.match;
+                    if (chatid === undefined) throw new Error("ctx.match is undefined");
+                    if (typeof chatid !== "string") throw new Error("ctx.match is not a string");
+                    const group = await group_dao.getGroup(BigInt(chatid));
+        
+                    return group?.is_silent ? "ADMIN: Deactivate Silence Mode" : "ADMIN:Activate Silence Mode";
+        
+                },
+                payload: (ctx) => {
+                    if(ctx.match === undefined) throw new Error("payload: ctx.match is undefined");
+                    if(typeof ctx.match !== "string") throw new Error("payload: ctx.match is not a string");
+                    return ctx.match
+                }
+            },
+                async ctx => {
+                    if(ctx.match === undefined) throw new Error("handler: ctx.match is undefined");
+                    if(typeof ctx.match !== "string") throw new Error("handler: ctx.match is not a string");
+                    await group_dao.invertIsSilent(BigInt(ctx.match));
+                    await ctx.menu.update()
+                }).row()
+        }
+        return range
+        
+    })
+    .text({
+        text: "Back to groups list",
+        payload: (ctx) => {
+            if(ctx.match === undefined) throw new Error("payload: ctx.match is undefined");
+            if(typeof ctx.match !== "string") throw new Error("payload: ctx.match is not a string");
+            return ctx.match
+        }
+    }, async (ctx) => {
+        await ctx.editMessageText(await generate_group_list_menu_message(ctx), { parse_mode: "HTML" });
+        await ctx.menu.nav("group-list-menu", { immediate: true })
+    })
     .register(group_list_menu);
 
 function select_group_message(ctx: Context, type: string | undefined, title: string, uig: user_in_group) {
