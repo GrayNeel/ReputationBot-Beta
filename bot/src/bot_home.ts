@@ -209,41 +209,21 @@ bot.on("my_chat_member", async (ctx) => {
     // Check if the bot was added to a group
     if (chatMember.new_chat_member.status === 'member') {
       console.log('Bot added to a group:', chatMember.new_chat_member);
-      replyTopicAware(ctx, 'Hello! Thanks for adding me to this group! remember that i need to be an Admin to be able to work! :D');
+      ctx.reply('✋ Hello! Thanks for adding me to this group! remember that <b>i need to be an Admin</b> to be able to work!', { parse_mode: 'HTML' });
     }
   
     // Check if the bot was promoted to an admin
     if (chatMember.new_chat_member.status === 'administrator') {
       console.log('Bot promoted to admin in group:', chatMember.chat.id);
       upsertGroup(group_api.parseGroup(ctx));
-      replyTopicAware(ctx, 'Yay! thanks for making me and admin! Now you can reply to users with a message starting with + or - to give them or subtract them a reputation point!');
+      const message = '🎉Yay! thanks for making me and admin!🎉' +
+                      '\n\nNow you can reply to users with a message starting with \'<b>+</b>\' or \'<b>-</b>\' to give them or subtract them a reputation point!' +
+                      '\n\nRemember that every day:' +
+                      '\n😇 you can give only 10 reputation points (+)' +
+                      '\n😈 you can subtract only 2 reputation points (-)' +
+                      '\n\nWell actually if you really want to give more than 10 + there might be a way to do that 😏...\nHave fun!';
+      ctx.reply(message, { parse_mode: 'HTML' });
     }
-
-    // if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
-    // if (ctx.chat === undefined) throw new Error('ctx.chat is UNDEFINED!');
-
-    // const type = ctx.chat.type;
-
-    // if (type == "private") {
-    //     console.log("chat type: private");
-    //     return;
-    // }
-
-    // if (type == "channel") {
-    //     console.log("chat type: channel");
-    //     return;
-    // }
-
-    // if (type != "group" && type != "supergroup") throw new Error('type is neither channel, private, group or supergroup! it is "' + type + '" instead!');
-
-    // //type can only be group or supergroup at this point
-    // const group = group_api.parseGroup(ctx);
-    // const status = ctx.myChatMember.new_chat_member.status;
-
-    // if (status == "member") {
-    //     //it means the bot has been added to this group
-    //     upsertGroup(group);
-    // }
 
 });
 
