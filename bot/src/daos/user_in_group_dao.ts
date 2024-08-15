@@ -20,7 +20,7 @@ export async function midnightReset() {
         }
     });
     
-    return update_count;
+    return update_count.count;
 }
 
 /**
