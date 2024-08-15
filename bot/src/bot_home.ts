@@ -260,11 +260,11 @@ bot.api.setMyCommands([
     },
     {
         command: "toprep",
-        description: "users with top reputation in this group",
+        description: "/toprep N, where N is max 25",
     },
     {
         command: "topmess",
-        description: "users with the most messages in this group",
+        description: "/topmess N, where N is max 25",
     },
 ]);
 
@@ -301,9 +301,10 @@ bot.command("toprep", async (ctx) => {
     let msg = "The top " + n_users + " users in this group are:\n";
     const group = group_api.parseGroup(ctx);
     const uig_users = await uig_dao.getTopNUsersByReputation(group.chatid, n_users);
+    let i = 1;
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
-        msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
+        msg += i + ". [" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
     }
 
     replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
@@ -329,10 +330,10 @@ bot.command("topmess", async (ctx) => {
     let msg = "The top " + n_users + " contributors in this group are:\n";
     const group = group_api.parseGroup(ctx);
     const uig_users = await uig_dao.getTopNUsersByMessages(group.chatid, n_users);
-    //let users : User[] = [];
+    let i = 1;
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
-        msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.messages + ")\n";
+        msg += i + ". [" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.messages + ")\n";
     }
 
     replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
