@@ -38,7 +38,12 @@ group_list_menu.dynamic(async (ctx) => {
             console.log("group with chatid: " + uig.chatid + " is null");
             continue;
         }
-        const message = select_group_message(ctx, ctx.chat?.type, group.title, uig)
+
+        //i want to see if the user is an admin
+        const admins = await ctx.api.getChatAdministrators(`${uig.chatid}`)
+        const isAdmin = admins.some((admin) => BigInt(admin.user.id) === uig.userid);
+
+        const message = select_group_message(ctx, ctx.chat?.type, group.title, uig, isAdmin)
         range.submenu({ text: `${i}`, payload: `${uig.chatid}` }, "selected-group-menu", ctx => ctx.editMessageText(message, { parse_mode: "HTML" }));
         i++;
     }
@@ -134,19 +139,24 @@ selected_group_menu
     })
     .register(group_list_menu);
 
-function select_group_message(ctx: Context, type: string | undefined, title: string, uig: user_in_group) {
+function select_group_message(ctx: Context, type: string | undefined, title: string, uig: user_in_group, isAdmin: boolean) {
     if (type !== "private") {
         console.log("select_group command used in chat:" + type + " id:" + ctx.chat?.id);
         throw new Error("select_group function used in non-private chat");
     }
     if (uig === null) throw new Error("group is null");
 
-    const message = "👥 <b>" + title + "</b> 👥"
+    let message = "👥 <b>" + title + "</b> 👥"
         + "\n\n🎩 Your Reputation: " + uig.reputation + "\n"
         + "📖 Total messages sent: " + uig.messages + "\n"
         + "💬 Total messages sent today: " + uig.messages_today + "\n"
         + "➕ Up available: " + uig.up_available + "\n"
         + "➖ Down available: " + uig.down_available + "\n";
+
+    if (isAdmin) {
+        message += "\nYou are an Admin of this group, so you can activate or deactivate silence mode,"
+            + "silence mode will deactivate the bot notifications in the chat when users give a + or a -.";
+    }
 
     return message;
 
