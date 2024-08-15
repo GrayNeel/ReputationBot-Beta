@@ -22,7 +22,7 @@ bot.use(menu_api.start_menu);
 
 bot.chatType("private").command("start", async (ctx) => {
     // Send the menu.
-    menu_api.print_menu(ctx);
+    menu_api.print_main_menu(ctx);
 });
 
 function isReplyNoBots(ctx: Context) {
@@ -30,11 +30,11 @@ function isReplyNoBots(ctx: Context) {
         //console.log("ignore because: msg is not a reply");
         return false;
     }
-    if( ctx.message.reply_to_message.from.is_bot || ctx.message.from.is_bot ){
+    if (ctx.message.reply_to_message.from.is_bot || ctx.message.from.is_bot) {
         //console.log("ignore because: msg is sent to or from a bot");
         return false;
     }
-    
+
     return true;
 }
 
@@ -50,8 +50,8 @@ function replyTopicAware(ctx: Context, msg: string, other?: any) {
 
     if (ctx === undefined) throw new Error('ctx is UNDEFINED and it must be provided!');
     if (ctx.message === undefined) throw new Error('ctx.message is UNDEFINED!');
-    if( ctx.message?.is_topic_message ){
-        
+    if (ctx.message?.is_topic_message) {
+
         let modifiers = { message_thread_id: ctx.message?.message_thread_id };
         if (other !== undefined) modifiers = { ...modifiers, ...other };
         ctx.reply(msg, modifiers);
@@ -79,9 +79,9 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
     const sender = user_api.parseSender(ctx);
     const receiver = user_api.parseReceiver(ctx);
 
-    if(sender.userid === receiver.userid){
+    if (sender.userid === receiver.userid) {
         //ctx.reply("🤨 You can't give reputation to yourself!");
-        replyTopicAware(ctx,"🤨 You can't give reputation to yourself!")
+        replyTopicAware(ctx, "🤨 You can't give reputation to yourself!")
         return;
     }
 
@@ -109,7 +109,7 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
 
         new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false)
         if (new_available == -1) {
-            replyTopicAware(ctx,"Not enough down available");
+            replyTopicAware(ctx, "Not enough down available");
             return;
         }
         change_rep_value *= -1;
@@ -117,7 +117,7 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
 
     try { new_rep = await uig_dao.upsertUserReputation(receiver.userid, group.chatid, change_rep_value, false) }
     catch (e) {
-        replyTopicAware(ctx,"Error while updating receiver reputation: \n" + e);
+        replyTopicAware(ctx, "Error while updating receiver reputation: \n" + e);
     }
 
     print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
@@ -143,42 +143,42 @@ function print_rep_update(ctx: Context, new_rep: number, new_available: number, 
     replyTopicAware(ctx, success_msg);
 }
 
-function generateSacrificeButton(senderId: bigint, receiverId: bigint ) : InlineKeyboard {
+function generateSacrificeButton(senderId: bigint, receiverId: bigint): InlineKeyboard {
     let data = "sacrifice-click " + senderId + " " + receiverId;
     console.log(data);
-    return new InlineKeyboard().text("🔥Sacrifice🔥", data );
+    return new InlineKeyboard().text("🔥Sacrifice🔥", data);
 }
 
 function print_not_enough_up_available(ctx: Context, receiver: User, sender: User) {
     let msg = "";
     msg += (sender.username !== "" ? "@" + sender.username : sender.firstname) + " you have no more up available for today!";
-    msg += "\nYou can sacrifice one of your own reputation point to " + (receiver.username !== "" ? "@" + receiver.username : receiver.firstname) +" instead!"
+    msg += "\nYou can sacrifice one of your own reputation point to " + (receiver.username !== "" ? "@" + receiver.username : receiver.firstname) + " instead!"
     ctx.reply(msg, { reply_markup: generateSacrificeButton(sender.userid, receiver.userid), reply_to_message_id: ctx.message?.message_id });
 }
 
-function is_not_group( ctx: Context ) : boolean {
+function is_not_group(ctx: Context): boolean {
     return ctx.chat?.type !== "group" && ctx.chat?.type !== "supergroup"
 }
 
 // Wait for click events with specific callback data.
 bot.callbackQuery(/sacrifice-click \d* \d*/, async (ctx) => {
-    
+
     await ctx.answerCallbackQuery();
-    
+
     let data = ctx.update.callback_query.data.split(" ");
     let senderId = BigInt(data[1].trim());
     let receiverId = BigInt(data[2]);
-    
+
     //check if senderId is the same as the user that clicked the button
-    if( senderId !== BigInt(ctx.update.callback_query.from.id) ){
+    if (senderId !== BigInt(ctx.update.callback_query.from.id)) {
         return;
     }
 
     const group = group_api.parseGroup(ctx);
     let rec_rep = 0;
     let send_rep = 0;
-    
-    try { 
+
+    try {
         //add 1 to the receiver reputation
         rec_rep = await uig_dao.upsertUserReputation(receiverId, group.chatid, 1, false)
         //remove 1 from the sender reputation
@@ -189,12 +189,12 @@ bot.callbackQuery(/sacrifice-click \d* \d*/, async (ctx) => {
     }
 
     let msg = ctx.update.callback_query.message;
-    if( msg === undefined ) throw new Error("msg is undefined");
-    ctx.editMessageReplyMarkup( { reply_markup: new InlineKeyboard } );
+    if (msg === undefined) throw new Error("msg is undefined");
+    ctx.editMessageReplyMarkup({ reply_markup: new InlineKeyboard });
     ctx.editMessageText("Successful Sacrifice!\n📈 their new reputation: " + rec_rep + "\n📉 your new reputation: " + send_rep);
-    
 
-  });
+
+});
 
 
 /// detect when happens something to the "chat member" status of this bot, it triggers
@@ -205,24 +205,24 @@ bot.on("my_chat_member", async (ctx) => {
     const chatMember = ctx.update.my_chat_member;
 
     console.log('my_chat_member update:', chatMember.new_chat_member);
-  
+
     // Check if the bot was added to a group
     if (chatMember.new_chat_member.status === 'member') {
-      console.log('Bot added to a group:', chatMember.new_chat_member);
-      ctx.reply('✋ Hello! Thanks for adding me to this group! remember that <b>i need to be an Admin</b> to be able to work!', { parse_mode: 'HTML' });
+        console.log('Bot added to a group:', chatMember.new_chat_member);
+        ctx.reply('✋ Hello! Thanks for adding me to this group! remember that <b>i need to be an Admin</b> to be able to work!', { parse_mode: 'HTML' });
     }
-  
+
     // Check if the bot was promoted to an admin
     if (chatMember.new_chat_member.status === 'administrator') {
-      console.log('Bot promoted to admin in group:', chatMember.chat.id);
-      upsertGroup(group_api.parseGroup(ctx));
-      const message = '🎉Yay! thanks for making me and admin!🎉' +
-                      '\n\nNow you can reply to users with a message starting with \'<b>+</b>\' or \'<b>-</b>\' to give them or subtract them a reputation point!' +
-                      '\n\nRemember that every day:' +
-                      '\n😇 you can give only 10 reputation points (+)' +
-                      '\n😈 you can subtract only 2 reputation points (-)' +
-                      '\n\nWell actually if you really want to give more than 10 + there might be a way to do that 😏...\nHave fun!';
-      ctx.reply(message, { parse_mode: 'HTML' });
+        console.log('Bot promoted to admin in group:', chatMember.chat.id);
+        upsertGroup(group_api.parseGroup(ctx));
+        const message = '🎉Yay! thanks for making me and admin!🎉' +
+            '\n\nNow you can reply to users with a message starting with \'<b>+</b>\' or \'<b>-</b>\' to give them or subtract them a reputation point!' +
+            '\n\nRemember that every day:' +
+            '\n😇 you can give only 10 reputation points (+)' +
+            '\n😈 you can subtract only 2 reputation points (-)' +
+            '\n\nWell actually if you really want to give more than 10 + there might be a way to do that 😏...\nHave fun!';
+        ctx.reply(message, { parse_mode: 'HTML' });
     }
 
 });
@@ -237,9 +237,7 @@ cron.schedule('0 0 0 * * *', async () => {
 
 //handle commands in public chats
 bot.command("start", async (ctx) => {
-
-    // Send the menu.
-    menu_api.print_menu(ctx);
+    menu_api.print_main_menu(ctx);
 })
 
 bot.api.setMyCommands([
@@ -258,18 +256,17 @@ bot.api.setMyCommands([
 ]);
 
 bot.command("myrep", async (ctx) => {
-    // make sure this is NOT a private chat
+
     if (is_not_group(ctx)) {
         ctx.reply("This command is only available in groups. Use it in the group you want to check your reputation in.");
         return;
     }
-    
-    // get the reputation of the user in the group
+
     const group = group_api.parseGroup(ctx);
     const user = user_api.parseSender(ctx);
 
     const rep = await uig_dao.getUserReputation(user.userid, group.chatid);
-    replyTopicAware(ctx,"The reputation of " + (user.username !== "" ? "@" + user.username : user.firstname) + " in this group is " + rep);
+    replyTopicAware(ctx, "The reputation of " + (user.username !== "" ? "@" + user.username : user.firstname) + " in this group is " + rep);
 })
 
 bot.command("toprep", async (ctx) => {
@@ -278,7 +275,7 @@ bot.command("toprep", async (ctx) => {
         ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
         return;
     }
-    
+
     // read the number of users to retrieve
     let n_users = 10;
     if (ctx.match !== undefined) {
@@ -288,22 +285,16 @@ bot.command("toprep", async (ctx) => {
         if (n_users > 25) n_users = 25;
     }
 
-    console.log("n_users: " + n_users);
-
     let msg = "The top " + n_users + " users in this group are:\n";
-    // get the reputation of the user in the group
     const group = group_api.parseGroup(ctx);
-    // TODO: complete this function
     const uig_users = await uig_dao.getTopNUsersByReputation(group.chatid, n_users);
-    //let users : User[] = [];
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
-        //msg += (user.username !== "" ? "@" + user.username : user.firstname) + " with " + u.reputation + " reputation\n";
         msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
     }
 
     replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
-    
+
 })
 
 bot.command("topmess", async (ctx) => {
@@ -312,7 +303,7 @@ bot.command("topmess", async (ctx) => {
         ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
         return;
     }
-    
+
     // read the number of users to retrieve
     let n_users = 10;
     if (ctx.match !== undefined) {
@@ -322,12 +313,8 @@ bot.command("topmess", async (ctx) => {
         if (n_users > 25) n_users = 25;
     }
 
-    console.log("n_users: " + n_users);
-
     let msg = "The top " + n_users + " contributors in this group are:\n";
-    // get the reputation of the user in the group
     const group = group_api.parseGroup(ctx);
-    // TODO: complete this function
     const uig_users = await uig_dao.getTopNUsersByMessages(group.chatid, n_users);
     //let users : User[] = [];
     for (const u of uig_users) {
@@ -336,7 +323,7 @@ bot.command("topmess", async (ctx) => {
     }
 
     replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
-    
+
 })
 
 // Start the bot (using long polling)
