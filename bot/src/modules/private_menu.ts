@@ -95,37 +95,37 @@ selected_group_menu
 
                     const user = ctx.from;
                     if (user === undefined) throw new Error("ctx.from is undefined");
-                    
+
                     console.log("\n\nctx.match: " + ctx.match);
                     const chatid = ctx.match;
                     if (chatid === undefined) throw new Error("ctx.match is undefined");
                     if (typeof chatid !== "string") throw new Error("ctx.match is not a string");
                     const group = await group_dao.getGroup(BigInt(chatid));
-        
+
                     return group?.is_silent ? "ADMIN: Deactivate Silence Mode" : "ADMIN:Activate Silence Mode";
-        
+
                 },
                 payload: (ctx) => {
-                    if(ctx.match === undefined) throw new Error("payload: ctx.match is undefined");
-                    if(typeof ctx.match !== "string") throw new Error("payload: ctx.match is not a string");
+                    if (ctx.match === undefined) throw new Error("payload: ctx.match is undefined");
+                    if (typeof ctx.match !== "string") throw new Error("payload: ctx.match is not a string");
                     return ctx.match
                 }
             },
                 async ctx => {
-                    if(ctx.match === undefined) throw new Error("handler: ctx.match is undefined");
-                    if(typeof ctx.match !== "string") throw new Error("handler: ctx.match is not a string");
+                    if (ctx.match === undefined) throw new Error("handler: ctx.match is undefined");
+                    if (typeof ctx.match !== "string") throw new Error("handler: ctx.match is not a string");
                     await group_dao.invertIsSilent(BigInt(ctx.match));
                     await ctx.menu.update()
                 }).row()
         }
         return range
-        
+
     })
     .text({
         text: "Back to groups list",
         payload: (ctx) => {
-            if(ctx.match === undefined) throw new Error("payload: ctx.match is undefined");
-            if(typeof ctx.match !== "string") throw new Error("payload: ctx.match is not a string");
+            if (ctx.match === undefined) throw new Error("payload: ctx.match is undefined");
+            if (typeof ctx.match !== "string") throw new Error("payload: ctx.match is not a string");
             return ctx.match
         }
     }, async (ctx) => {
