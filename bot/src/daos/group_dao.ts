@@ -42,3 +42,16 @@ export async function getGroup(chatid: bigint) {
     
         return group;
 }
+
+export async function invertIsSilent(chatid: bigint) {
+    
+    const group = await getGroup(chatid);
+    if (group === null) throw new Error("group with chatid: " + chatid + " is null");
+
+    await prisma.group.update({
+        where: { chatid: chatid },
+        data: { is_silent: !group?.is_silent }
+    });
+    
+    return;
+}
