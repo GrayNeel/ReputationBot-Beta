@@ -5,7 +5,7 @@ import * as user_dao from "./daos/user_dao";
 import * as group_api from "./modules/group";
 import * as uig_dao from "./daos/user_in_group_dao";
 import * as user_api from "./modules/user";
-import { upsertGroup } from "./daos/group_dao";
+import { upsertGroup, getGroup } from "./daos/group_dao";
 import * as menu_api from "./modules/private_menu";
 import { User } from "@prisma/client";
 dotenv.config();
@@ -85,7 +85,19 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
         return;
     }
 
-    const group = group_api.parseGroup(ctx);
+    //const group = group_api.parseGroup(ctx);
+    const group = await getGroup(BigInt(ctx.chat.id));
+
+    if (group === undefined || group === null) {
+        replyTopicAware(
+            ctx,
+            "Error: this chat is unknown to the bot!\nMake sure that:" +
+            "\n- you are in a group" +
+            "\n- the bot is an administrator of the group" +
+            "\n\nIf the error persists, remove the bot from the group and try adding it again."
+        );
+        return;
+    }
 
     user_dao.upsertUser(sender);
     user_dao.upsertUser(receiver);
@@ -96,8 +108,8 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
     let new_rep = 0;
     const is_up = ctx.message.text.startsWith("+");
 
-    // handle messages starting with "+" (plus) that are replies to other messages
     if (is_up) {
+        // handle messages starting with "+" (plus) that are replies to other messages
 
         new_available = await uig_dao.upsertUserUpAvailable(sender.userid, group.chatid, decrease_available, false);
         if (new_available == -1) {
@@ -106,6 +118,7 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
         }
 
     } else {
+        // handle messages starting with "+" (plus) that are replies to other messages
 
         new_available = await uig_dao.upsertUserDownAvailable(sender.userid, group.chatid, decrease_available, false)
         if (new_available == -1) {
@@ -120,7 +133,7 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
         replyTopicAware(ctx, "Error while updating receiver reputation: \n" + e);
     }
 
-    print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
+    if (!group.is_silent) print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
 });
 
 bot.on("message:text").filter(notFromBots).hears(/^[^/+-].*/, async (ctx) => {
