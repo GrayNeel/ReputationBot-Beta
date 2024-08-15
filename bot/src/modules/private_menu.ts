@@ -40,7 +40,14 @@ group_list_menu.dynamic(async (ctx) => {
         }
 
         //i want to see if the user is an admin
-        const admins = await ctx.api.getChatAdministrators(`${uig.chatid}`)
+        const admins = await ctx.api.getChatAdministrators(`${uig.chatid}`).catch((err) => {
+            console.log(err);
+            return [];
+        });
+        if (admins.length === 0) {
+            console.log("group with chatid: " + uig.chatid + " has no admins, bot might have been removed from it");
+            continue;
+        }
         const isAdmin = admins.some((admin) => BigInt(admin.user.id) === uig.userid);
 
         const message = select_group_message(ctx, ctx.chat?.type, group.title, uig, isAdmin)
@@ -82,18 +89,25 @@ const selected_group_menu = new Menu("selected-group-menu");
 selected_group_menu
     .dynamic(async (ctx) => {
 
+        const range = new MenuRange();
         const user = ctx.from;
         if (user === undefined) throw new Error("ctx.from is undefined");
         const chatid = ctx.match;
         if (chatid === undefined) throw new Error("ctx.match is undefined");
         if (typeof chatid !== "string") throw new Error("ctx.match is not a string");
-        //i want to see if the user is an admin
-        const admins = await ctx.api.getChatAdministrators(chatid)
-        //console.log("\n\nadmins: " + JSON.stringify(admins));
-        const isAdmin = admins.some((admin) => admin.user.id === user.id);
-        //console.log("\nisAdmin: " + isAdmin);
 
-        const range = new MenuRange();
+        //i want to see if the user is an admin
+        const admins = await ctx.api.getChatAdministrators(chatid).catch((err) => {
+            console.log(err);
+            return [];
+        });
+        if (admins.length === 0) {
+            console.log("group with chatid: " + chatid + " has no admins, bot might have been removed from it");
+            return range;
+        }
+        const isAdmin = admins.some((admin) => admin.user.id === user.id);
+
+
         if (isAdmin) {
             range.text({
                 text: async (ctx) => {
