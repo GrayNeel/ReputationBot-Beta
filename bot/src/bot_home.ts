@@ -318,6 +318,7 @@ bot.command("toprep", async (ctx) => {
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
         msg += i + ". [" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
+        i++;
     }
 
     replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
@@ -347,6 +348,7 @@ bot.command("topmess", async (ctx) => {
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
         msg += i + ". [" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.messages + ")\n";
+        i++;
     }
 
     replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
