@@ -264,11 +264,17 @@ bot.on("my_chat_member", async (ctx) => {
 
 
 // cronjob to reset the up and down available for all users in all groups at midnight
-cron.schedule('30 0 * * *', async () => {
+cron.schedule('0 0 * * *', async () => {
     console.log('running the reset task every day at midnight');
     const resetted_uigs = await uig_dao.midnightReset();
     console.log("midnight reset of  " + resetted_uigs + " users in groups instance ");
-});
+},
+    {
+        scheduled: true,
+        timezone: "Europe/Rome"
+    }
+);
+
 
 
 //handle commands in public chats
