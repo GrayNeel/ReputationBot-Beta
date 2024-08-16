@@ -142,7 +142,7 @@ bot.on("message:text").filter(notFromBots).hears(/^[^/+-].*/, async (ctx) => {
     const sender = user_api.parseSender(ctx);
     const group = group_api.parseGroup(ctx);
 
-    user_dao.upsertUser(sender);
+    await user_dao.upsertUser(sender);
     uig_dao.upsertUserMessages(sender.userid, group.chatid, false);
 
 
