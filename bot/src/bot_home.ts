@@ -290,11 +290,19 @@ bot.api.setMyCommands([
     },
     {
         command: "toprep",
-        description: "/toprep N, where N is max 25",
+        description: "/toprep N, where N < 25",
+    },
+    {
+        command: "topreptoday",
+        description: "/topreptoday N, where N < 25",
     },
     {
         command: "topmess",
-        description: "/topmess N, where N is max 25",
+        description: "/topmess N, where N < 25",
+    },
+    {
+        command: "topmesstoday",
+        description: "/topmesstoday N, where N < 25",
     },
 ]);
 
@@ -328,13 +336,26 @@ bot.command("toprep", async (ctx) => {
         if (n_users > 25) n_users = 25;
     }
 
-    let msg = "The top " + n_users + " users in this group are:\n";
+    let msg = "The best " + n_users + " users in this group are:\n";
     const group = group_api.parseGroup(ctx);
     const uig_users = await uig_dao.getTopNUsersByReputation(group.chatid, n_users);
     let i = 1;
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
-        msg += i + ". [" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
+        switch (i){
+            case 1:
+                msg += "🥇 ";
+                break;
+            case 2:
+                msg += "🥈 ";
+                break;
+            case 3:
+                msg += "🥉 ";
+                break;
+            default:
+                msg += i + ". ";
+        }
+        msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
         i++;
     }
 
@@ -342,10 +363,10 @@ bot.command("toprep", async (ctx) => {
 
 })
 
-bot.command("topmess", async (ctx) => {
+bot.command("topreptoday", async (ctx) => {
     // make sure this is NOT a private chat
     if (is_not_group(ctx)) {
-        ctx.reply("This command is only available in groups. Use it in the group you want to check the top users in.");
+        ctx.reply("This command is only available in groups. Use it in the group you want to check the top users today.");
         return;
     }
 
@@ -358,9 +379,83 @@ bot.command("topmess", async (ctx) => {
         if (n_users > 25) n_users = 25;
     }
 
-    let msg = "The top " + n_users + " contributors in this group are:\n";
+    let msg = "The best " + n_users + " users today (since midnight in Rome) are:\n";
+    const group = group_api.parseGroup(ctx);
+    const uig_users = await uig_dao.getTopNUsersByReputationToday(group.chatid, n_users);
+    let i = 1;
+    for (const u of uig_users) {
+        let user = await user_dao.getUserById(u.userid) as User;
+        switch (i){
+            case 1:
+                msg += "🥇 ";
+                break;
+            case 2:
+                msg += "🥈 ";
+                break;
+            case 3:
+                msg += "🥉 ";
+                break;
+            default:
+                msg += i + ". ";
+        }
+        msg += "[" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.reputation + ")\n";
+        i++;
+    }
+
+    replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
+
+})
+
+bot.command("topmess", async (ctx) => {
+    // make sure this is NOT a private chat
+    if (is_not_group(ctx)) {
+        ctx.reply("This command is only available in groups. Use it in the group you want to check the most active users in.");
+        return;
+    }
+
+    // read the number of users to retrieve
+    let n_users = 10;
+    if (ctx.match !== undefined) {
+        n_users = parseInt(ctx.match[0]);
+        if (isNaN(n_users)) n_users = 10;
+        if (n_users < 1) n_users = 1;
+        if (n_users > 25) n_users = 25;
+    }
+
+    let msg = "The " + n_users + " most active users by number of messages ever sent in this group are:\n";
     const group = group_api.parseGroup(ctx);
     const uig_users = await uig_dao.getTopNUsersByMessages(group.chatid, n_users);
+    let i = 1;
+    for (const u of uig_users) {
+        let user = await user_dao.getUserById(u.userid) as User;
+        msg += i + ". [" + user.firstname + " " + user.lastname + "](https://t.me/" + user.username + ") (" + u.messages + ")\n";
+        i++;
+    }
+
+    replyTopicAware(ctx, msg, { parse_mode: "Markdown", link_preview_options: { is_disabled: true } });
+
+})
+
+
+bot.command("topmesstoday", async (ctx) => {
+    // make sure this is NOT a private chat
+    if (is_not_group(ctx)) {
+        ctx.reply("This command is only available in groups. Use it in the group you want to check the most active users today in.");
+        return;
+    }
+
+    // read the number of users to retrieve
+    let n_users = 10;
+    if (ctx.match !== undefined) {
+        n_users = parseInt(ctx.match[0]);
+        if (isNaN(n_users)) n_users = 10;
+        if (n_users < 1) n_users = 1;
+        if (n_users > 25) n_users = 25;
+    }
+
+    let msg = "The " + n_users + " most active users by number of messages (since midnight in Rome) are:\n";
+    const group = group_api.parseGroup(ctx);
+    const uig_users = await uig_dao.getTopNUsersByMessagesToday(group.chatid, n_users);
     let i = 1;
     for (const u of uig_users) {
         let user = await user_dao.getUserById(u.userid) as User;
