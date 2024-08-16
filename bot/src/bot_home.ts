@@ -99,8 +99,8 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
         return;
     }
 
-    user_dao.upsertUser(sender);
-    user_dao.upsertUser(receiver);
+    await user_dao.upsertUser(sender);
+    await user_dao.upsertUser(receiver);
 
     const decrease_available = -1;
     let change_rep_value = 1;
