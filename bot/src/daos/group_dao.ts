@@ -24,13 +24,13 @@ export async function upsertGroup(group:Group) {
  * Must be called after the deletion of each entry in other tables that might use this groupId as a foreign key
  * @param group 
  */
-export async function removeGroup(group:Group) {
+export async function removeGroup(chatid: bigint) {
 
     await prisma.group.delete({
         where: {
-          chatid: group.chatid
+          chatid: chatid
         }
-      }).catch(()=>{ throw new Error("removeGroup has failed in removing group: "+group); })
+      }).catch(()=>{ throw new Error("removeGroup has failed in removing group: "+chatid); })
     
 }
 

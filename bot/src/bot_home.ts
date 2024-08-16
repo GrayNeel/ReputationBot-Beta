@@ -5,7 +5,7 @@ import * as user_dao from "./daos/user_dao";
 import * as group_api from "./modules/group";
 import * as uig_dao from "./daos/user_in_group_dao";
 import * as user_api from "./modules/user";
-import { upsertGroup, getGroup } from "./daos/group_dao";
+import { upsertGroup, getGroup, removeGroup } from "./daos/group_dao";
 import * as menu_api from "./modules/private_menu";
 import { User } from "@prisma/client";
 dotenv.config();
@@ -249,6 +249,15 @@ bot.on("my_chat_member", async (ctx) => {
             '\n😈 you can subtract only 2 reputation points (-)' +
             '\n\nWell actually if you really want to give more than 10 + there might be a way to do that 😏...\nHave fun!';
         ctx.reply(message, { parse_mode: 'HTML' });
+    }
+
+    //check if the bot was removed from a group
+    if (chatMember.old_chat_member.status === 'left' || chatMember.old_chat_member.status === 'kicked') {
+        console.log('Bot removed from a group:', chatMember.old_chat_member);
+        //delete all uigs for this group
+        await uig_dao.deleteByChatId(BigInt(chatMember.chat.id));
+        //delete the group
+        removeGroup(BigInt(chatMember.chat.id));
     }
 
 });

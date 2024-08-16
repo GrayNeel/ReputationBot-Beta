@@ -250,3 +250,16 @@ export async function upsertUserMessages(userid: bigint, groupid: bigint, is_adm
     return uig.messages;
 
 }
+
+export async function deleteByChatId(chatid: bigint) {
+    const {count} = await prisma.user_in_group.deleteMany({
+        where: { chatid: chatid }
+    }).catch((err) => {
+        console.log("deleteByChatId error: " + err);
+        return {count: 0};
+    });
+
+    return count;
+}
+
+
