@@ -130,7 +130,8 @@ bot.on("message:text").filter(isReplyNoBots).hears(/^[+-].*/, async (ctx) => {
 
     try { new_rep = await uig_dao.upsertUserReputation(receiver.userid, group.chatid, change_rep_value, false) }
     catch (e) {
-        replyTopicAware(ctx, "Error while updating receiver reputation: \n" + e);
+        //replyTopicAware(ctx, "Error while updating receiver reputation: \n" + e);
+        console.log( "Error while updating receiver reputation: \n" + e );
     }
 
     if (!group.is_silent) print_rep_update(ctx, new_rep, new_available, receiver, sender, is_up);
@@ -252,8 +253,8 @@ bot.on("my_chat_member", async (ctx) => {
     }
 
     //check if the bot was removed from a group
-    if (chatMember.old_chat_member.status === 'left' || chatMember.old_chat_member.status === 'kicked') {
-        console.log('Bot removed from a group:', chatMember.old_chat_member);
+    if (chatMember.new_chat_member.status === 'left' || chatMember.new_chat_member.status === 'kicked') {
+        console.log('Bot removed from a group:', chatMember.new_chat_member);
         //delete all uigs for this group
         await uig_dao.deleteByChatId(BigInt(chatMember.chat.id));
         //delete the group
